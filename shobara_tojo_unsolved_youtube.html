@@ -49,6 +49,8 @@ h3{font-size:clamp(18px,1.55vw,32px);line-height:1.35}
 .header .num{font-size:clamp(13px,1vw,21px);font-weight:900;color:#6d747d;letter-spacing:.18em;padding-top:.9vh}
 .grid2{position:relative;z-index:2;display:grid;grid-template-columns:1.03fr .97fr;gap:3.2vw;height:76%;align-items:center}
 .grid2.widevisual{grid-template-columns:.9fr 1.1fr}
+/* 右下ワイプ（顔出し）用に右カラムの図版を上寄せ・短縮して空間を確保 */
+.grid2>.visual{align-self:start;height:81%}
 .stack{display:flex;flex-direction:column;gap:2vh}
 .card{background:rgba(15,19,25,.84);border:1px solid var(--line);padding:1.45vw;border-radius:16px;backdrop-filter:blur(2px)}
 .card h3{margin-bottom:.65vh}.card p,.card li{font-size:clamp(14px,1.12vw,23px);line-height:1.55;color:#dedbd4}
@@ -65,7 +67,7 @@ h3{font-size:clamp(18px,1.55vw,32px);line-height:1.35}
 .photo::after{content:"";position:absolute;inset:0;z-index:3;background:linear-gradient(0deg,rgba(4,5,7,.82) 0,transparent 42%),linear-gradient(90deg,rgba(4,5,7,.25),transparent 55%);pointer-events:none}
 .caption{position:absolute;z-index:4;left:1.2vw;right:1.2vw;bottom:1.05vw;font-size:clamp(10px,.72vw,15px);line-height:1.4;color:#e5e3de;text-shadow:0 2px 6px #000}
 .fallback{position:absolute;inset:0;display:grid;place-items:center;z-index:1;color:#c1c7ce;background:#151a20;font-weight:800;letter-spacing:.08em;overflow:hidden;text-shadow:0 2px 8px #000}.fallback::before{content:"";position:absolute;left:-4%;right:-4%;bottom:0;height:72%;background:linear-gradient(155deg,transparent 34%,#28313a 35% 52%,transparent 53%),linear-gradient(205deg,transparent 32%,#1f272f 33% 56%,transparent 57%),linear-gradient(0deg,#0b0f13 0 25%,transparent 26%);opacity:.9}.fallback::after{content:"";position:absolute;width:20%;height:22%;left:58%;bottom:19%;background:#10151a;clip-path:polygon(0 38%,50% 0,100% 38%,100% 100%,0 100%);box-shadow:-260px 55px 0 -18px #10151a}.fallback{isolation:isolate}.fallback>*{position:relative;z-index:2}
-.source{position:absolute;z-index:7;left:5.2%;right:5.2%;bottom:1.35%;font-size:clamp(8px,.58vw,12px);line-height:1.3;color:#7f8790;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.source{position:absolute;z-index:7;left:5.2%;right:27%;bottom:1.35%;font-size:clamp(8px,.58vw,12px);line-height:1.3;color:#7f8790;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .source a{text-decoration:none;border-bottom:1px dotted #626b74}
 .label{display:inline-flex;align-items:center;gap:.45em;border:1px solid var(--line);border-radius:999px;padding:.38em .75em;background:rgba(17,22,27,.85);color:#cfd2d5;font-size:clamp(10px,.75vw,16px);font-weight:800}
 .label.redline{border-color:#7f3030;background:rgba(37,17,17,.9);color:#f0caca}
@@ -97,7 +99,7 @@ ul.clean li::before{content:"";position:absolute;left:0;top:.62em;width:.55em;he
 .badge-row{display:flex;flex-wrap:wrap;gap:.7vw}
 .warning{background:rgba(37,19,19,.88);border:1px solid #733535;padding:1.05vw 1.2vw;border-radius:12px;color:#f2d5d5;font-size:clamp(14px,1.08vw,22px);line-height:1.5;font-weight:800}
 .credit-note{font-size:clamp(10px,.72vw,15px);color:#8f969f;line-height:1.45}
-.notes{display:none;position:absolute;z-index:40;left:3%;right:3%;bottom:8%;max-height:30%;overflow:auto;background:rgba(4,5,7,.96);border:1px solid #4b535d;border-radius:14px;padding:1.1vw 1.4vw;box-shadow:var(--shadow);font-size:clamp(13px,1vw,20px);line-height:1.6;color:#e9e6df}
+.notes{display:none;position:absolute;z-index:40;left:3%;right:27%;bottom:8%;max-height:30%;overflow:auto;background:rgba(4,5,7,.96);border:1px solid #4b535d;border-radius:14px;padding:1.1vw 1.4vw;box-shadow:var(--shadow);font-size:clamp(13px,1vw,20px);line-height:1.6;color:#e9e6df}
 .notes.show{display:block}.notes b{color:var(--amber)}
 #controls{position:absolute;z-index:100;left:50%;bottom:1.15%;transform:translateX(-50%);display:flex;align-items:center;gap:.5vw;background:rgba(9,11,14,.82);border:1px solid #313840;border-radius:999px;padding:.35vw .55vw;backdrop-filter:blur(8px);transition:.2s}
 #controls.hidden{opacity:0;pointer-events:none}
@@ -148,7 +150,7 @@ ul.clean li::before{content:"";position:absolute;left:0;top:.62em;width:.55em;he
 @keyframes crowX{0%{transform:translateX(-8vw) translateY(0);opacity:0}1.5%{opacity:.8}6%{transform:translateX(18vw) translateY(-1.8vh)}12%{transform:translateX(46vw) translateY(1.2vh)}18%{transform:translateX(74vw) translateY(-2.2vh)}23.5%{opacity:.8}25%{transform:translateX(108vw) translateY(-.6vh);opacity:0}100%{transform:translateX(108vw);opacity:0}}
 
 /* ===== イメージボタン／オーバーレイ ===== */
-#imagineBtn{position:absolute;z-index:90;right:1.15%;bottom:8%;display:flex;align-items:center;gap:.55em;border:1px solid #a83737;background:rgba(28,9,9,.9);color:#f4d7d7;border-radius:999px;padding:.55em 1.15em .55em .95em;font-weight:900;letter-spacing:.14em;font-size:clamp(12px,.95vw,19px);cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.5);animation:imbP 2.4s ease-out infinite}
+#imagineBtn{position:absolute;z-index:90;left:1.15%;bottom:7.5%;display:flex;align-items:center;gap:.55em;border:1px solid #a83737;background:rgba(28,9,9,.9);color:#f4d7d7;border-radius:999px;padding:.55em 1.15em .55em .95em;font-weight:900;letter-spacing:.14em;font-size:clamp(12px,.95vw,19px);cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.5);animation:imbP 2.4s ease-out infinite}
 #imagineBtn::before{content:"";width:.62em;height:.62em;border-radius:50%;background:var(--red);box-shadow:0 0 9px var(--red);animation:blinkdot 1.3s ease-in-out infinite}
 #imagineBtn:hover{background:rgba(60,16,16,.95)}
 #imagineBtn.off{display:none}
@@ -158,10 +160,13 @@ ul.clean li::before{content:"";position:absolute;left:0;top:.62em;width:.55em;he
   background:radial-gradient(130% 125% at 50% 44%, rgba(14,5,5,.6) 0%, rgba(3,4,6,.97) 72%)}
 .imagine.show{display:grid;animation:imIn .32s ease-out}
 @keyframes imIn{from{opacity:0;transform:scale(.965)}to{opacity:1;transform:none}}
-.im-stage{width:min(76%,150vh);border:1px solid #5a2c2c;border-radius:18px;overflow:hidden;background:#0a0d11;box-shadow:0 34px 100px rgba(0,0,0,.9),0 0 42px rgba(216,68,68,.14)}
+/* ワイプ位置ガイド（Wキーで表示・収録時は非表示のまま） */
+#wipeGuide{display:none;position:absolute;right:0;bottom:0;width:25%;height:26%;z-index:96;border:2px dashed rgba(216,68,68,.6);border-right:0;border-bottom:0;background:rgba(216,68,68,.07);place-items:center;pointer-events:none;font-weight:900;font-size:clamp(11px,.85vw,17px);color:rgba(242,205,205,.8);letter-spacing:.14em;text-align:center;line-height:1.6}
+#wipeGuide.show{display:grid}
+.im-stage{width:min(62%,124vh);margin:0 14% 12% 0;border:1px solid #5a2c2c;border-radius:18px;overflow:hidden;background:#0a0d11;box-shadow:0 34px 100px rgba(0,0,0,.9),0 0 42px rgba(216,68,68,.14)}
 .im-stage svg{width:100%;height:100%;display:block}
 .im-note{position:absolute;left:2.4%;top:2.6%;font-size:clamp(10px,.8vw,16px);font-weight:800;color:#e8c9c9;background:rgba(40,12,12,.8);border:1px solid #7c3232;border-radius:999px;padding:.45em 1em;letter-spacing:.08em}
-.im-close{position:absolute;left:50%;bottom:7.4%;transform:translateX(-50%);font-size:clamp(11px,.85vw,17px);font-weight:800;color:#cfd3d8;opacity:.85;animation:blinkdot 2s ease-in-out infinite;letter-spacing:.14em;text-shadow:0 2px 8px #000;pointer-events:none}
+.im-close{position:absolute;left:43%;bottom:5%;transform:translateX(-50%);font-size:clamp(11px,.85vw,17px);font-weight:800;color:#cfd3d8;opacity:.85;animation:blinkdot 2s ease-in-out infinite;letter-spacing:.14em;text-shadow:0 2px 8px #000;pointer-events:none}
 .im-note{pointer-events:none}
 
 /* ===== シーン用アニメ部品 ===== */
@@ -1058,13 +1063,13 @@ ul.clean li::before{content:"";position:absolute;left:0;top:.62em;width:.55em;he
 
 <section class="slide" data-title="犯人像の整理" data-bg="anaband" data-bglabel="イメージ写真：廃屋（Wikimedia Commons）">
   <div class="header"><div><div class="kicker">Possible offender profiles</div><h2>犯人像は、どの説にも矛盾が残る</h2></div><div class="num">15</div></div>
-  <div class="matrix" style="height:67%">
+  <div class="matrix" style="height:56%">
     <div class="cell"><h3 class="blue">面識のある人物</h3><p><b>説明しやすい：</b>警戒されず入れた、生活状況を知っていた。<br><b>残る疑問：</b>明確なトラブルや動機が表に出ていない。</p></div>
     <div class="cell"><h3 class="amber">面識のない侵入者</h3><p><b>説明しやすい：</b>無施錠の勝手口、人目の少ない環境。<br><b>残る疑問：</b>室内の物色が目立たず、暴力が激しい。</p></div>
     <div class="cell"><h3 class="red">金品目的</h3><p><b>説明しやすい：</b>独居高齢者宅を狙った可能性。<br><b>残る疑問：</b>何がなくなったのか公表されず、大きな乱れもない。</p></div>
     <div class="cell"><h3 class="green">殺害・口封じ目的</h3><p><b>説明しやすい：</b>複数回の殴打と凶器持ち去り。<br><b>残る疑問：</b>84歳の女性を狙う具体的理由が見えない。</p></div>
   </div>
-  <div class="warning" style="margin-top:1.2vw">これは公開情報から作った比較表。警察が特定の説を有力視しているという意味ではありません。</div>
+  <div class="warning" style="margin-top:1.2vw;margin-right:26%">これは公開情報から作った比較表。警察が特定の説を有力視しているという意味ではありません。</div>
   <div class="source">分析資料：公開報道に基づく仮説比較</div>
   <div class="imagine" aria-label="イメージ再現イラスト">
     <div class="im-stage"><svg viewBox="0 0 960 540">
@@ -1114,7 +1119,7 @@ ul.clean li::before{content:"";position:absolute;left:0;top:.62em;width:.55em;he
 
 <section class="slide" data-title="7つの未解明点" data-bg="stairs" data-bgpos="20% 70%" data-bglabel="イメージ写真：廃屋へ続く石段（Wikimedia Commons）">
   <div class="header"><div><div class="kicker">Seven unanswered questions</div><h2>YouTubeで押さえる<span class="red">7つの未解明点</span></h2></div><div class="num">16</div></div>
-  <div class="q-list" style="grid-template-columns:1fr 1fr;height:67%">
+  <div class="q-list" style="grid-template-columns:1fr 1fr;height:58%">
     <div class="q"><div class="qn">1</div><p>犯行の正確な時刻はいつか</p></div>
     <div class="q"><div class="qn">2</div><p>犯人はどこから入り、どこから出たのか</p></div>
     <div class="q"><div class="qn">3</div><p>照明が消えていたことに意味はあるのか</p></div>
@@ -1230,8 +1235,8 @@ ul.clean li::before{content:"";position:absolute;left:0;top:.62em;width:.55em;he
     <div class="source-item"><b>背景写真：Wikimedia Commons</b><span>Alex Kerr（CC BY-SA 4.0）／Raita Futo（CC BY 2.0）／663highland（CC BY 2.5）／Syced（CC0）／Su--May（CC BY 2.0）／Syuzo Tsushima（CC BY 2.0）／Fg2（PD）／L. Halter・USFWS（PD）／Mitsuki-2368（CC BY-SA 3.0）／OS6（CC BY-SA 3.0）</span></div>
     <div class="source-item"><b>空中写真</b><span>国土地理院（1975年撮影・東城地区）／出典明示の上で利用可。事件現場を示すものではありません</span></div>
   </div>
-  <div class="warning" style="margin-top:1.2vw">報道画像は出典を表示していますが、YouTubeへの転載許諾を保証するものではありません。公開前に権利者の利用条件を確認してください。Wikimedia Commonsの写真はCC等のライセンスに基づき、動画概要欄にも作者・ライセンスを記載してください。</div>
-  <p class="credit-note" style="margin-top:1vw">操作：← → / Space＝ページ移動（効果音付き）、I＝イメージイラスト表示、M＝効果音ON/OFF、N＝ナレーションメモ、F＝全画面、H＝操作バー非表示、Home / End＝先頭・末尾。URLの #番号 で指定ページを直接開けます。ページ送り効果音はHTML内に埋め込み済みです。</p>
+  <div class="warning" style="margin-top:1.2vw;margin-right:26%">報道画像は出典を表示していますが、YouTubeへの転載許諾を保証するものではありません。公開前に権利者の利用条件を確認してください。Wikimedia Commonsの写真はCC等のライセンスに基づき、動画概要欄にも作者・ライセンスを記載してください。</div>
+  <p class="credit-note" style="margin-top:1vw;margin-right:26%">操作：← → / Space＝ページ移動（効果音付き）、I＝イメージイラスト表示、M＝効果音ON/OFF、W＝ワイプ位置ガイド表示、N＝ナレーションメモ、F＝全画面、H＝操作バー非表示、Home / End＝先頭・末尾。URLの #番号 で指定ページを直接開けます。画面右下はワイプ（顔出し）用に空けてあります。</p>
   <div class="source">調査・構成日：2026年7月28日</div>
   <aside class="notes"><b>制作メモ：</b>このページは収録対象から外しても構いません。実写報道画像を使わない場合でも、各ページのSVG図解・イメージイラストはHTML内に埋め込まれているため、そのまま表示できます。「イメージ」ボタンの再現イラストは全てオリジナル作画で、権利処理は不要です。</aside>
 </section>
@@ -1253,6 +1258,7 @@ ul.clean li::before{content:"";position:absolute;left:0;top:.62em;width:.55em;he
 </div>
 
 <button id="imagineBtn" class="off" title="このページのイメージイラストを表示（I）">イメージ</button>
+<div id="wipeGuide" aria-hidden="true">ワイプ位置<br>（Wキーで表示切替）</div>
 
 <div id="controls" aria-label="スライド操作">
   <button id="prev" title="前へ">◀</button>
@@ -1369,6 +1375,7 @@ ul.clean li::before{content:"";position:absolute;left:0;top:.62em;width:.55em;he
     else if(e.key.toLowerCase()==='h')controls.classList.toggle('hidden');
     else if(e.key.toLowerCase()==='i')toggleImagine();
     else if(e.key.toLowerCase()==='m')setMute(!muted);
+    else if(e.key.toLowerCase()==='w')document.getElementById('wipeGuide').classList.toggle('show');
   });
   document.addEventListener('mousemove',()=>controls.classList.remove('hidden'));
   show(i,true);
