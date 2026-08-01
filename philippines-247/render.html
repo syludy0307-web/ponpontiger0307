@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>PH Art.247 Short Renderer</title>
+<style>
+  html,body{margin:0;padding:0;background:#000;overflow:hidden}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="timeline.js"></script>
+<script>
+'use strict';
+const TL = window.TIMELINE;
+const W = TL.W, H = TL.H;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+// ---------- utils ----------
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,p)=>a+(b-a)*p;
+const fract = x=>x-Math.floor(x);
+const rnd = i=>fract(Math.sin(i*127.1+311.7)*43758.5453);
+const easeOutQuad = p=>1-(1-p)*(1-p);
+const easeInQuad = p=>p*p;
+const easeInOut = p=>p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+const easeOutCubic = p=>1-Math.pow(1-p,3);
+const easeOutQuint = p=>1-Math.pow(1-p,5);
+const easeOutBack = (p,s=2.2)=>{const c=s+1;return 1+c*Math.pow(p-1,3)+s*Math.pow(p-1,2);};
+const easeOutElastic = p=>p<=0?0:p>=1?1:Math.pow(2,-10*p)*Math.sin((p*10-0.75)*(2*Math.PI/3))+1;
+const easeOutBounce = p=>{const n=7.5625,d=2.75;
+  if(p<1/d)return n*p*p; if(p<2/d)return n*(p-=1.5/d)*p+.75;
+  if(p<2.5/d)return n*(p-=2.25/d)*p+.9375; return n*(p-=2.625/d)*p+.984375;};
+
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+const SANS='"Noto Sans CJK JP"', SERIF='"Noto Serif CJK JP"', EMOJI='"Noto Color Emoji"';
+const COL={w:'#FFFFFF',r:'#FF4A3D',g:'#FFCF3F',b:'#5CB6FF',ink:'#10131F',
+  phBlue:'#0E4BC3',phRed:'#D6203A',phYellow:'#FCD116',
+  bgTop:'#0B1026',bgBot:'#131F49'};
+
+function goldGrad(y0,y1){const g=ctx.createLinearGradient(0,y0,0,y1);
+  g.addColorStop(0,'#FFF3B0');g.addColorStop(.45,'#FFD34D');g.addColorStop(.55,'#F7A928');g.addColorStop(1,'#FFCE45');return g;}
+
+const mCache=new Map();
+function chW(font,ch){const k=font+'|'+ch;let v=mCache.get(k);
+  if(v===undefined){ctx.font=font;v=ctx.measureText(ch).width;mCache.set(k,v);}return v;}
+
+// ---------- styled segment text ----------
+function segText(segs,o){
+  const font=`900 ${o.size}px ${o.font||SANS}`;
+  const chars=[];
+  for(const s of segs)for(const ch of s.t)chars.push({ch,c:s.c});
+  let total=0;for(const c of chars)total+=chW(font,c.ch);
+  let cx=(o.x!==undefined?o.x:W/2)-total/2;
+  const t=o.t,t0=o.t0,st=o.stagger!==undefined?o.stagger:.022,pd=o.popDur||.17;
+  ctx.save();ctx.textBaseline='middle';ctx.textAlign='center';ctx.lineJoin='round';ctx.lineCap='round';
+  for(let i=0;i<chars.length;i++){
+    const c=chars[i],w=chW(font,c.ch);
+    let sc=1,al=1;
+    if(!o.fixed){
+      const p=(t-(t0+i*st))/pd;
+      if(p<=0){cx+=w;continue;}
+      sc=p>=1?1:easeOutBack(p);al=clamp(p*2.5,0,1);
+    }
+    if(o.kwBounce!==false&&c.c!=='w'&&c.c!=='k')sc*=1+0.045*Math.sin(t*6.5+i*1.3);
+    ctx.save();ctx.translate(cx+w/2,o.y);ctx.scale(sc,sc);
+    ctx.globalAlpha=(o.alpha!==undefined?o.alpha:1)*al;
+    ctx.font=font;
+    ctx.strokeStyle=o.strokeCol||COL.ink;ctx.lineWidth=(o.strokeW!==undefined?o.strokeW:o.size*.18);
+    ctx.strokeText(c.ch,0,0);
+    if(c.c==='g'){ctx.fillStyle=goldGrad(-o.size*.55,o.size*.55);}
+    else ctx.fillStyle=COL[c.c]||c.c||'#fff';
+    ctx.fillText(c.ch,0,0);
+    ctx.restore();
+    cx+=w;
+  }
+  ctx.restore();
+  return total;
+}
+
+function popIn(t,t0,dur=.2){const p=(t-t0)/dur;return p<=0?0:p>=1?1:easeOutBack(p);}
+function elasticIn(t,t0,dur=.55){const p=(t-t0)/dur;return p<=0?0:easeOutElastic(clamp(p,0,1));}
+function boyonSc(t,t0){
+  const p=(t-t0);if(p<0)return null;
+  const sy=easeOutElastic(clamp(p/.6,0,1));
+  const sx=clamp(2-sy,.55,1.45);
+  return {sx,sy};
+}
+function outSc(t,tEnd,dur=.16){
+  if(t<tEnd)return 1;const p=(t-tEnd)/dur;return p>=1?0:1-easeInQuad(p);}
+
+// ---------- impacts ----------
+const IMPACTS=[
+  {t:2.07,amp:24,fl:{c:'255,59,48',a:.3},bu:{x:540,y:1280,cols:['#FF5A4E','#fff','#FFC933'],n:28,sp:880},ln:1},
+  {t:4.7,amp:6},
+  {t:5.57,amp:16,fl:{c:'255,201,51',a:.25},bu:{x:540,y:1300,cols:['#FFD34D','#FFF3B0','#fff'],n:22,sp:760}},
+  {t:6.87,amp:18,fl:{c:'255,255,255',a:.2},bu:{x:540,y:480,cols:['#FF5A4E','#fff'],n:16,sp:600}},
+  {t:12.1,amp:8},
+  {t:17.77,amp:20,fl:{c:'255,201,51',a:.26},bu:{x:540,y:1000,cols:['#FFD34D','#FFF3B0','#fff'],n:26,sp:850},ln:1},
+  {t:19.15,amp:12,fl:{c:'255,201,51',a:.15}},
+  {t:20.75,amp:12,fl:{c:'255,255,255',a:.12}},
+  {t:22.6,amp:8},
+  {t:25.77,amp:12,fl:{c:'255,255,255',a:.15}},
+  {t:28.45,amp:8},
+  {t:29.45,amp:10},
+  {t:32.07,amp:12,fl:{c:'255,255,255',a:.12}},
+  {t:36.57,amp:24,fl:{c:'255,59,48',a:.3},bu:{x:540,y:1230,cols:['#FF5A4E','#fff'],n:28,sp:900},ln:1},
+  {t:38.57,amp:14,fl:{c:'255,255,255',a:.15}},
+  {t:42.42,amp:22,fl:{c:'255,201,51',a:.28},bu:{x:540,y:1050,cols:['#FFD34D','#FFF3B0','#fff'],n:32,sp:950},ln:1,conf:1},
+  {t:45.25,amp:10},
+  {t:46.47,amp:16,fl:{c:'255,59,48',a:.18}},
+  {t:50.45,amp:14,fl:{c:'255,59,48',a:.18},bu:{x:540,y:1010,cols:['#FF5A4E','#fff'],n:20,sp:760}},
+];
+function shakeOffset(t){
+  let x=0,y=0;
+  for(const im of IMPACTS){const d=t-im.t;
+    if(d>0&&d<.5){const k=im.amp*Math.pow(1-d/.5,2.2);
+      const f=Math.floor(t*60);
+      x+=(rnd(f*3.7+im.t*91)-.5)*2*k;y+=(rnd(f*5.3+im.t*57)-.5)*2*k;}}
+  return {x,y};
+}
+function drawFlashes(t){
+  for(const im of IMPACTS){if(!im.fl)continue;const d=t-im.t;
+    if(d>0&&d<.3){ctx.fillStyle=`rgba(${im.fl.c},${im.fl.a*(1-d/.3)})`;ctx.fillRect(0,0,W,H);}}
+}
+function drawBursts(t){
+  for(const im of IMPACTS){
+    if(im.bu){const b=im.bu,d=t-im.t;
+      if(d>0&&d<.75){for(let i=0;i<b.n;i++){
+        const a=rnd(i*7+im.t*13)*Math.PI*2,sp=b.sp*(0.45+rnd(i*3+1)*0.8);
+        const pr=easeOutCubic(clamp(d/.75,0,1));
+        const px=b.x+Math.cos(a)*sp*pr,py=b.y+Math.sin(a)*sp*pr*0.85;
+        const sz=(4+rnd(i*11)*11)*(1-pr);
+        ctx.fillStyle=b.cols[i%b.cols.length];ctx.globalAlpha=1-pr;
+        ctx.save();ctx.translate(px,py);ctx.rotate(a+pr*6);
+        ctx.fillRect(-sz,-sz*.45,sz*2,sz*.9);ctx.restore();}
+        ctx.globalAlpha=1;}}
+    if(im.conf){const d=t-im.t;
+      if(d>0&&d<1.6){for(let i=0;i<26;i++){
+        const x0=rnd(i*13+2)*W,vy=500+rnd(i*17)*420;
+        const px=x0+Math.sin(d*4+i)*60,py=-40+vy*d;
+        if(py>H+40)continue;
+        const cols=['#FFD34D','#FF5A4E','#5CB6FF','#fff','#FCD116'];
+        ctx.fillStyle=cols[i%cols.length];ctx.globalAlpha=clamp(1.6-d,0,1)*.9;
+        ctx.save();ctx.translate(px,py);ctx.rotate(d*7+i);ctx.fillRect(-9,-6,18,12);ctx.restore();}
+        ctx.globalAlpha=1;}}
+  }
+}
+function drawSpeedlines(t){
+  for(const im of IMPACTS){if(!im.ln)continue;const d=t-im.t;
+    if(d>0&&d<.4){const al=(1-d/.4)*.75;
+      ctx.save();ctx.translate(W/2,H/2);
+      for(let i=0;i<26;i++){
+        const a=rnd(i*31+im.t*7)*Math.PI*2+Math.floor(t*30)*.13;
+        const r0=430+rnd(i*5)*180,r1=1250;
+        const wdt=(2+rnd(i*9)*9)*al;
+        ctx.strokeStyle=`rgba(255,255,255,${al*(0.35+rnd(i)*0.6)})`;
+        ctx.lineWidth=wdt;ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*r0,Math.sin(a)*r0);
+        ctx.lineTo(Math.cos(a)*r1,Math.sin(a)*r1);ctx.stroke();}
+      ctx.restore();}}
+}
+
+// ---------- backgrounds ----------
+const SEC_ACCENT={hook:'#FF5A4E',law:'#FF7A5C',cond:'#FFC933',case:'#7FD7C4',punch:'#8FA6FF'};
+function drawBG(t,sec){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  if(sec==='cond'){g.addColorStop(0,'#160B0B');g.addColorStop(1,'#331109');}
+  else if(sec==='case'){g.addColorStop(0,'#081419');g.addColorStop(1,'#10333A');}
+  else if(sec==='punch'){g.addColorStop(0,'#05060F');g.addColorStop(1,'#131A38');}
+  else if(sec==='hook'){g.addColorStop(0,'#120913');g.addColorStop(1,'#2A0F1E');}
+  else{g.addColorStop(0,COL.bgTop);g.addColorStop(1,COL.bgBot);}
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  const gx=W/2+Math.sin(t*.5)*120,gy=760+Math.cos(t*.4)*90;
+  const rg=ctx.createRadialGradient(gx,gy,0,gx,gy,900);
+  rg.addColorStop(0,sec==='hook'?'rgba(255,90,80,0.10)':'rgba(120,150,255,0.16)');
+  rg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-Math.PI/7);
+  const period=240,off=(t*70)%period;
+  ctx.fillStyle=sec==='cond'?'rgba(255,201,51,0.05)':'rgba(255,255,255,0.035)';
+  for(let x=-1700+off;x<1700;x+=period)ctx.fillRect(x,-1400,110,2800);
+  ctx.restore();
+  const ac=SEC_ACCENT[sec]||'#fff';
+  for(let i=0;i<24;i++){
+    const spd=26+rnd(i*3)*44;
+    const px=rnd(i*7)*W+Math.sin(t*(.5+rnd(i)*0.7)+i)*44;
+    const py=(H+140-((t*spd+rnd(i*13)*H)%(H+280)));
+    const sz=2.5+rnd(i*11)*6;
+    ctx.globalAlpha=.10+rnd(i*5)*.16;ctx.fillStyle=i%3?'#FFFFFF':ac;
+    ctx.beginPath();ctx.arc(px,py,sz,0,7);ctx.fill();}
+  ctx.globalAlpha=1;
+  if(sec==='hook'){ // 不穏な赤パルス
+    const pulse=.5+.5*Math.sin(t*3.4);
+    const rv=ctx.createRadialGradient(W/2,H/2,400,W/2,H/2,1300);
+    rv.addColorStop(0,'rgba(0,0,0,0)');rv.addColorStop(1,`rgba(214,32,58,${0.10+0.10*pulse})`);
+    ctx.fillStyle=rv;ctx.fillRect(0,0,W,H);}
+  if(sec==='cond')drawHazard(t);
+  if(sec==='punch'){
+    const sg=ctx.createRadialGradient(W/2,900,80,W/2,900,1050);
+    sg.addColorStop(0,'rgba(255,244,214,0.10)');sg.addColorStop(1,'rgba(0,0,0,0.28)');
+    ctx.fillStyle=sg;ctx.fillRect(0,0,W,H);}
+}
+function drawHazard(t){
+  const bands=[{y:236},{y:1596}];
+  for(const b of bands){
+    ctx.save();rr(0,b.y,W,74,0);ctx.clip();
+    ctx.fillStyle='#151009';ctx.fillRect(0,b.y,W,74);
+    ctx.translate((t*160)%124-124,0);
+    for(let x=-124;x<W+248;x+=124){
+      ctx.fillStyle='#FFC933';
+      ctx.beginPath();ctx.moveTo(x,b.y+74);ctx.lineTo(x+62,b.y);ctx.lineTo(x+100,b.y);ctx.lineTo(x+38,b.y+74);ctx.closePath();ctx.fill();}
+    ctx.restore();}
+  const pulse=.5+.5*Math.sin(t*7);
+  const rg=ctx.createRadialGradient(W/2,H/2,300,W/2,H/2,1250);
+  rg.addColorStop(0,'rgba(0,0,0,0)');rg.addColorStop(1,`rgba(214,32,58,${0.14+0.12*pulse})`);
+  ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+}
+function paperGhost(cy,rot){
+  ctx.save();ctx.globalAlpha=.07;ctx.translate(W/2,cy);ctx.rotate(rot);
+  ctx.fillStyle='#fff';rr(-430,-480,860,960,26);ctx.fill();
+  ctx.fillStyle='#000';for(let i=0;i<11;i++)rr(-370,-400+i*82,i%3?700:520,20,10),ctx.fill();
+  ctx.restore();
+}
+
+// ---------- vector art ----------
+function star(x,y,r,col){
+  ctx.save();ctx.translate(x,y);ctx.fillStyle=col;ctx.beginPath();
+  for(let i=0;i<5;i++){const a=-Math.PI/2+i*2*Math.PI/5;
+    ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);
+    const a2=a+Math.PI/5;ctx.lineTo(Math.cos(a2)*r*.45,Math.sin(a2)*r*.45);}
+  ctx.closePath();ctx.fill();ctx.restore();
+}
+function drawGavel(x,y,s,t){
+  const T0=6.5,T1=6.87; // slam timing
+  let ang;
+  if(t<T0)ang=-.62;
+  else if(t<T1)ang=lerp(-.62,.04,easeInQuad((t-T0)/(T1-T0)));
+  else ang=.04+.3*Math.pow(2.71,-(t-T1)*4)*Math.cos((t-T1)*16);
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#7A4B22';rr(-330,116,200,28,8);ctx.fill();
+  ctx.fillStyle='#93602F';rr(-296,84,132,34,8);ctx.fill();
+  ctx.save();ctx.rotate(ang);
+  ctx.fillStyle='#8A5A2B';rr(-206,-11,196,22,10);ctx.fill();
+  ctx.save();ctx.translate(-228,0);
+  ctx.fillStyle='#A9743C';rr(-44,-76,88,152,18);ctx.fill();
+  ctx.fillStyle='#C08A4C';rr(-44,-76,88,26,12);ctx.fill();
+  ctx.fillStyle='#8A5A2B';rr(-44,50,88,26,12);ctx.fill();
+  ctx.restore();
+  ctx.fillStyle='#C08A4C';ctx.beginPath();ctx.arc(0,0,16,0,7);ctx.fill();
+  ctx.restore();ctx.restore();
+}
+function drawBars(p,alpha,lift){
+  if(p<=0)return;
+  const dy=-H*(1-easeOutBounce(clamp(p,0,1)))-(lift||0);
+  ctx.save();ctx.translate(0,dy);ctx.globalAlpha=alpha!==undefined?alpha:1;
+  for(let x=88;x<W;x+=136){
+    const g=ctx.createLinearGradient(x,0,x+30,0);
+    g.addColorStop(0,'#39466F');g.addColorStop(.5,'#0B1024');g.addColorStop(1,'#39466F');
+    ctx.fillStyle=g;ctx.fillRect(x,-40,30,H+80);}
+  for(const yy of[420,1430]){
+    const g=ctx.createLinearGradient(0,yy,0,yy+34);
+    g.addColorStop(0,'#414F7C');g.addColorStop(1,'#0B1024');
+    ctx.fillStyle=g;ctx.fillRect(0,yy,W,34);}
+  ctx.restore();
+}
+function drawWarnTri(x,y,s,t){
+  const bl=.75+.25*Math.sin(t*7);
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.rotate(Math.sin(t*3)*.04);
+  ctx.lineJoin='round';ctx.lineWidth=26;ctx.strokeStyle='#FFC933';
+  ctx.fillStyle=`rgba(255,201,51,${.16+.2*bl})`;
+  ctx.beginPath();ctx.moveTo(0,-96);ctx.lineTo(108,88);ctx.lineTo(-108,88);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#FFC933';ctx.font=`900 120px ${SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('!',0,10);ctx.restore();
+}
+// デスティエロ：地図＋立入禁止サークル＋追放される人
+function drawMap(x,y,s,t,t0){
+  const ap=popIn(t,t0,.25);if(ap<=0)return;
+  ctx.save();ctx.translate(x,y);ctx.scale(s*ap,s*ap);
+  ctx.fillStyle='rgba(0,0,0,0.4)';rr(-332,-162,672,336,22);ctx.fill();
+  ctx.fillStyle='#0D1E30';rr(-340,-170,672,336,22);ctx.fill();
+  ctx.strokeStyle='rgba(140,180,220,0.35)';ctx.lineWidth=3;rr(-340,-170,672,336,22);ctx.stroke();
+  ctx.save();rr(-340,-170,672,336,22);ctx.clip();
+  ctx.strokeStyle='rgba(140,180,220,0.12)';ctx.lineWidth=2;
+  for(let gx=-340;gx<340;gx+=84){ctx.beginPath();ctx.moveTo(gx,-170);ctx.lineTo(gx,170);ctx.stroke();}
+  for(let gy=-170;gy<170;gy+=84){ctx.beginPath();ctx.moveTo(-340,gy);ctx.lineTo(340,gy);ctx.stroke();}
+  // 島
+  ctx.fillStyle='#2E4A3E';
+  ctx.beginPath();ctx.moveTo(-300,60);
+  ctx.bezierCurveTo(-280,-60,-180,-130,-60,-110);
+  ctx.bezierCurveTo(60,-130,180,-90,240,-30);
+  ctx.bezierCurveTo(300,30,240,120,120,130);
+  ctx.bezierCurveTo(0,150,-100,140,-190,120);
+  ctx.bezierCurveTo(-260,105,-310,90,-300,60);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(160,220,190,0.4)';ctx.lineWidth=3;ctx.stroke();
+  // 立入禁止サークル（描画アニメ）
+  const cp=clamp((t-t0-.25)/.5,0,1);
+  if(cp>0){
+    ctx.save();ctx.translate(-110,-10);
+    ctx.strokeStyle='#FF4A3D';ctx.lineWidth=8;ctx.setLineDash([22,14]);
+    ctx.lineDashOffset=-t*40;
+    ctx.beginPath();ctx.arc(0,0,96,-Math.PI/2,-Math.PI/2+cp*Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
+    if(cp>=1){
+      ctx.fillStyle='rgba(255,74,61,0.16)';ctx.beginPath();ctx.arc(0,0,96,0,7);ctx.fill();
+      ctx.font=`900 34px ${SANS}`;ctx.fillStyle='#FF4A3D';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('立入禁止',0,-4);
+      ctx.font=`900 24px ${SANS}`;ctx.fillText('半径25km',0,32);}
+    ctx.restore();}
+  // 追放される人（円の中心→外へ）
+  const fp=clamp((t-t0-.85)/.9,0,1);
+  if(fp>0){
+    const fx=lerp(-110,230,easeInOut(fp)),fy=lerp(-10,40,fp);
+    // 矢印
+    ctx.strokeStyle='rgba(255,207,63,0.8)';ctx.lineWidth=6;ctx.setLineDash([16,12]);
+    ctx.beginPath();ctx.moveTo(-40,10);ctx.lineTo(fx-40,fy+4);ctx.stroke();ctx.setLineDash([]);
+    ctx.save();ctx.translate(fx,fy);
+    ctx.rotate(Math.sin(t*9)*.1*(1-fp)+.08);
+    ctx.strokeStyle='#fff';ctx.lineWidth=8;ctx.lineCap='round';
+    ctx.beginPath();ctx.arc(0,-34,15,0,7);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,-19);ctx.lineTo(0,16);
+    ctx.moveTo(0,-6);ctx.lineTo(-18,8);ctx.moveTo(0,-6);ctx.lineTo(18,4);
+    ctx.moveTo(0,16);ctx.lineTo(-14,40);ctx.moveTo(0,16);ctx.lineTo(16,40);ctx.stroke();
+    ctx.restore();}
+  ctx.restore();ctx.restore();
+}
+// ドア（hinge左、ang=開き角 0で閉）
+function drawDoor(x,y,s,ang,t,heads){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#1A2238';rr(-130,-190,260,380,10);ctx.fill();
+  ctx.strokeStyle='#48587F';ctx.lineWidth=10;rr(-130,-190,260,380,10);ctx.stroke();
+  ctx.fillStyle='#090D1A';ctx.fillRect(-110,-172,220,352);
+  if(heads){ // 部屋の中（2人のシルエット＋❗は呼び出し側）
+    ctx.fillStyle='#2C3766';
+    ctx.beginPath();ctx.arc(-30,-40,30,0,7);ctx.fill();
+    ctx.beginPath();ctx.arc(28,-32,26,0,7);ctx.fill();
+    ctx.beginPath();ctx.moveTo(-72,120);ctx.quadraticCurveTo(-30,10,0,30);ctx.quadraticCurveTo(50,6,70,120);ctx.closePath();ctx.fill();}
+  // 扉
+  ctx.save();ctx.translate(-110,0);
+  const sq=Math.cos(ang);
+  ctx.scale(Math.max(.08,Math.abs(sq)),1);
+  ctx.fillStyle=sq>0?'#8A5A2B':'#6B431C';rr(0,-172,220,352,6);ctx.fill();
+  ctx.fillStyle=sq>0?'#A9743C':'#7d5023';rr(18,-150,184,150,6);ctx.fill();rr(18,20,184,140,6);ctx.fill();
+  ctx.fillStyle='#E8C87A';ctx.beginPath();ctx.arc(196,10,10,0,7);ctx.fill();
+  ctx.restore();
+  ctx.restore();
+}
+// 砂時計 p=経過(0→1で上の砂が落ちる) flipT=反転開始時刻
+function drawHourglass(x,y,s,t,p,flipT){
+  ctx.save();ctx.translate(x,y);
+  let fr=0;
+  if(flipT!==undefined&&t>flipT){fr=easeInOut(clamp((t-flipT)/.4,0,1))*Math.PI;}
+  ctx.rotate(fr+Math.sin(t*1.9)*.03);ctx.scale(s,s);
+  ctx.fillStyle='#8A5A2B';rr(-96,-150,192,26,10);ctx.fill();rr(-96,124,192,26,10);ctx.fill();
+  ctx.strokeStyle='rgba(210,225,255,0.55)';ctx.lineWidth=7;
+  ctx.beginPath();ctx.moveTo(-72,-124);ctx.lineTo(72,-124);ctx.lineTo(10,-6);ctx.lineTo(10,6);ctx.lineTo(72,124);ctx.lineTo(-72,124);ctx.lineTo(-10,6);ctx.lineTo(-10,-6);ctx.closePath();ctx.stroke();
+  const pp=clamp(p,0,1);
+  // 上の砂
+  ctx.fillStyle='#FFCF3F';
+  const th=(1-pp)*100;
+  if(th>2){ctx.beginPath();
+    const yTop=-24-th;
+    const half=lerp(12,64,(th)/100);
+    ctx.moveTo(-half,yTop);ctx.lineTo(half,yTop);ctx.lineTo(6,-16);ctx.lineTo(-6,-16);ctx.closePath();ctx.fill();}
+  // 落ちる砂
+  if(pp>0&&pp<1){ctx.strokeStyle='#FFCF3F';ctx.lineWidth=5;
+    ctx.beginPath();ctx.moveTo(0,-14);ctx.lineTo(0,100);ctx.stroke();}
+  // 下の砂
+  const bh=pp*100;
+  if(bh>2){ctx.beginPath();
+    const half=lerp(10,66,bh/100);
+    ctx.moveTo(-half,118);ctx.lineTo(half,118);ctx.lineTo(0,118-bh);ctx.closePath();ctx.fill();}
+  ctx.restore();
+}
+function emoji(ch,x,y,size,t,t0,wob){
+  const p=elasticIn(t,t0,.5);if(p<=0)return;
+  ctx.save();ctx.translate(x,y);ctx.scale(p,p);
+  if(wob)ctx.rotate(Math.sin(t*5+x)*.09);
+  ctx.font=`${size}px ${EMOJI}`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(ch,0,0);ctx.restore();
+}
+
+// ---------- big blocks ----------
+function megaText(lines,o){
+  ctx.save();
+  const bob=o.bob!==false;
+  const baseX=o.x!==undefined?o.x:W/2;
+  for(const L of lines){
+    const p=o.pop!==undefined?o.pop:1;if(p<=0)continue;
+    ctx.save();
+    const byy=bob?Math.sin(o.t*2.3+L.y)*5:0;
+    ctx.translate(baseX,L.y+byy);
+    ctx.rotate((L.rot||0)+(bob?Math.sin(o.t*1.6+L.y*.7)*.012:0));
+    let sx=p,sy=p;
+    if(o.boyon){const b=boyonSc(o.t,o.boyon);if(!b){ctx.restore();continue;}sx=b.sx;sy=b.sy;}
+    else if(o.slam){const sp=(o.t-o.slam)/.14;
+      if(sp<0){ctx.restore();continue;}
+      const k=sp>=1?1:easeOutQuint(clamp(sp,0,1));sx=sy=2.7-1.7*k;
+      ctx.globalAlpha=clamp(sp*3,0,1);}
+    ctx.scale(sx,sy);
+    ctx.font=`900 ${L.size}px ${L.font||SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.lineJoin='round';ctx.lineCap='round';
+    ctx.strokeStyle=COL.ink;ctx.lineWidth=L.size*.24;ctx.strokeText(L.txt,0,0);
+    ctx.strokeStyle='#fff';ctx.lineWidth=L.size*.09;
+    if(L.fill!=='white')ctx.strokeText(L.txt,0,0);
+    if(L.fill==='red')ctx.fillStyle='#FF3B2F';
+    else if(L.fill==='gold')ctx.fillStyle=goldGrad(-L.size*.55,L.size*.55);
+    else ctx.fillStyle='#fff';
+    ctx.fillText(L.txt,0,0);
+    ctx.restore();}
+  ctx.restore();
+}
+function stampBlock(t,t0,x,y,w,h,txt,size,tEnd){
+  const p=popIn(t,t0,.15);if(p<=0)return;
+  const sc=(2.4-1.4*clamp(p,0,1))*outSc(t,tEnd||1e9);if(sc<=0)return;
+  ctx.save();ctx.translate(x,y);ctx.rotate(-.09);ctx.scale(sc,sc);
+  ctx.globalAlpha=clamp((t-t0)*7,0,1)*.96;
+  ctx.fillStyle='rgba(120,10,15,0.30)';rr(-w/2,-h/2,w,h,18);ctx.fill();
+  ctx.strokeStyle='#FF4A3D';ctx.lineWidth=10;rr(-w/2,-h/2,w,h,18);ctx.stroke();
+  ctx.strokeStyle='rgba(255,74,61,0.55)';ctx.lineWidth=4;rr(-w/2+14,-h/2+14,w-28,h-28,12);ctx.stroke();
+  for(let i=0;i<14;i++){ctx.fillStyle=`rgba(255,74,61,${.2+rnd(i)*.3})`;
+    ctx.beginPath();ctx.arc((rnd(i*3)-.5)*w,(rnd(i*7)-.5)*h,3+rnd(i*11)*5,0,7);ctx.fill();}
+  ctx.font=`900 ${size}px ${SERIF}`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineJoin='round';ctx.strokeStyle='#10131F';ctx.lineWidth=size*.16;ctx.strokeText(txt,0,4);
+  ctx.fillStyle='#FF4A3D';ctx.fillText(txt,0,4);
+  ctx.restore();
+}
+function pillBlock(t,t0,x,y,txt,size,border,fill,boyon){
+  let sx=1,sy=1;
+  if(boyon){const b=boyonSc(t,t0);if(!b)return;sx=b.sx;sy=b.sy;}
+  else{const p=popIn(t,t0,.2);if(p<=0)return;sx=sy=p;}
+  ctx.save();ctx.translate(x,y);ctx.scale(sx,sy);
+  ctx.font=`900 ${size}px ${SANS}`;
+  const pw=ctx.measureText(txt).width+130;
+  ctx.fillStyle='rgba(6,9,22,0.82)';rr(-pw/2,-size*1.05,pw,size*2.1,size*1.05);ctx.fill();
+  ctx.strokeStyle=border;ctx.lineWidth=7;rr(-pw/2,-size*1.05,pw,size*2.1,size*1.05);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
+  ctx.strokeStyle=COL.ink;ctx.lineWidth=size*.16;ctx.strokeText(txt,0,2);
+  ctx.fillStyle=fill;ctx.fillText(txt,0,2);
+  ctx.restore();
+}
+function bigChip(t,t0,y,num,txt,accent,numCol){
+  const p=popIn(t,t0,.2);if(p<=0)return;
+  ctx.save();ctx.translate(W/2,y);ctx.scale(p,p);
+  ctx.font=`900 62px ${SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
+  ctx.fillStyle='rgba(6,9,22,0.8)';rr(-430,-62,860,124,58);ctx.fill();
+  ctx.strokeStyle=accent;ctx.lineWidth=6;rr(-430,-62,860,124,58);ctx.stroke();
+  ctx.fillStyle=accent;ctx.fillText(num,-350,4);
+  ctx.fillStyle=numCol||'#fff';ctx.fillText(txt,40,4);
+  ctx.restore();
+}
+
+// ---------- scenes ----------
+function sceneHook(t){
+  paperGhost(900,-.02);
+  if(t<4.45){
+    const oa=outSc(t,4.3);
+    ctx.save();ctx.globalAlpha=oa;
+    segText([{t:'フィリピンには',c:'w'}],{y:880,size:88,t0:0.35,t});
+    segText([{t:'人を',c:'w'},{t:'〇',c:'r'},{t:'しても',c:'w'}],{y:1035,size:100,t0:1.0,t});
+    megaText([{txt:'刑務所に入らない',size:116,y:1280,fill:'red',rot:-.02}],{t,slam:1.95});
+    if(t>3.1)segText([{t:'条文がある',c:'w'}],{y:1462,size:78,t0:3.12,t});
+    ctx.restore();
+  }else{
+    segText([{t:'今も生きている',c:'g'}],{y:920,size:104,t0:4.6,t});
+    segText([{t:'法律だ',c:'w'}],{y:1075,size:88,t0:5.0,t});
+    // 現行法バッジ
+    const p=popIn(t,5.45,.16);
+    if(p>0){ctx.save();ctx.translate(W/2,1330);ctx.rotate(-.06);ctx.scale(2.2-1.2*clamp(p,0,1),2.2-1.2*clamp(p,0,1));
+      ctx.globalAlpha=clamp((t-5.45)*7,0,1);
+      ctx.fillStyle='rgba(80,60,5,0.35)';rr(-240,-105,480,210,20);ctx.fill();
+      ctx.strokeStyle='#FFCF3F';ctx.lineWidth=10;rr(-240,-105,480,210,20);ctx.stroke();
+      ctx.strokeStyle='rgba(255,207,63,0.5)';ctx.lineWidth=4;rr(-226,-91,452,182,14);ctx.stroke();
+      ctx.font=`900 120px ${SERIF}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
+      ctx.strokeStyle=COL.ink;ctx.lineWidth=18;ctx.strokeText('現行法',0,6);
+      ctx.fillStyle=goldGrad(-66,66);ctx.fillText('現行法',0,6);
+      ctx.restore();}
+  }
+}
+
+function sceneLaw(t){
+  paperGhost(830,.03);
+  drawGavel(965,300,.62,t);
+  // タイトルカード
+  const cp=popIn(t,6.7,.2);
+  if(cp>0){ctx.save();ctx.translate(W/2,480);ctx.scale(cp,cp);
+    ctx.rotate(Math.sin(t*1.7)*.012);
+    ctx.font=`900 56px ${SANS}`;
+    ctx.fillStyle='rgba(214,32,58,0.92)';rr(-265,-170,530,80,40);ctx.fill();
+    ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('フィリピン刑法',0,-128);
+    megaText([{txt:'247条',size:196,y:52,fill:'white',font:SERIF}],{t,x:0,pop:1,bob:false});
+    ctx.restore();}
+  // 〇傷ピル
+  if(t>8.75){const a=t<17.4?1:clamp(1-(t-17.4)/.25,0,1);
+    if(a>0){ctx.save();ctx.globalAlpha=a;
+      pillBlock(t,8.75,W/2,712,'特殊な状況下での〇傷',48,'#FF4A3D','#FF4A3D');
+      ctx.restore();}}
+  // 現場のドアシーン
+  if(t>12.0&&t<17.75){
+    const a=t<17.4?1:clamp(1-(t-17.4)/.3,0,1);
+    const p=popIn(t,12.0,.25);
+    ctx.save();ctx.globalAlpha=a*p;
+    drawDoor(420,1150,1.15,.95,t,true);
+    emoji('❗',560,960,120,t,12.4,true);
+    // 取り押さえる側
+    ctx.strokeStyle='#fff';ctx.lineWidth=10;ctx.lineCap='round';
+    const rush=clamp((t-12.3)/.5,0,1);
+    ctx.save();ctx.translate(lerp(880,700,easeOutCubic(rush)),1190);
+    ctx.beginPath();ctx.arc(0,-60,26,0,7);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,-34);ctx.lineTo(0,40);
+    ctx.moveTo(0,-14);ctx.lineTo(-40,-34);ctx.moveTo(0,-14);ctx.lineTo(38,6);
+    ctx.moveTo(0,40);ctx.lineTo(-28,96);ctx.moveTo(0,40);ctx.lineTo(30,96);ctx.stroke();
+    ctx.restore();ctx.restore();}
+  // デスティエロ
+  if(t>17.65){
+    megaText([{txt:'デスティエロ',size:148,y:990,fill:'gold',rot:-.02}],{t,slam:17.65});
+    drawMap(W/2,1300,1,t,17.75);
+    if(t>19.05)pillBlock(t,19.05,W/2,1520,'＝追放刑だけ',54,'#FFCF3F','#FFCF3F');
+  }
+  // 刑務所には入らない（檻が跳ね返る）
+  if(t>20.65){
+    let drop=clamp((t-20.65)/.5,0,1),lift=0;
+    if(t>21.55)lift=H*easeInQuad(clamp((t-21.55)/.42,0,1));
+    if(lift<H)drawBars(drop,.4,lift);
+    pillBlock(t,20.7,W/2,760,'刑務所には入らない',60,'#FF4A3D','#FF4A3D',true);
+  }
+}
+
+function sceneCond(t){
+  segText([{t:'条件が',c:'w'},{t:'異常に厳しい',c:'r'}],{y:640,size:86,t0:22.5,t});
+  // 条件①②
+  if(t>25.65)bigChip(t,25.65,870,'①','現場そのもの限定','#FF4A3D');
+  if(t>31.95)bigChip(t,31.95,1000,'②','怒りの延長線上のみ','#FFC933');
+  // ✖チップ
+  if(t>28.35&&t<36.3){
+    const a=clamp(1-(t-35.9)/.3,0,1);
+    ctx.save();ctx.globalAlpha=a;
+    const p1=popIn(t,28.35,.2);
+    if(p1>0){ctx.save();ctx.translate(320,1180);ctx.scale(p1,p1);
+      ctx.font=`900 50px ${SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillStyle='rgba(6,9,22,0.8)';rr(-190,-52,380,104,50);ctx.fill();
+      ctx.strokeStyle='#FF4A3D';ctx.lineWidth=6;rr(-190,-52,380,104,50);ctx.stroke();
+      ctx.fillStyle='#fff';ctx.fillText('ホテルの前',26,4);ctx.restore();
+      emoji('❌',168,1180,64,t,28.5,true);}
+    const b=boyonSc(t,29.35);
+    if(b){ctx.save();ctx.translate(762,1180);ctx.scale(b.sx,b.sy);
+      ctx.font=`900 50px ${SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillStyle='rgba(6,9,22,0.8)';rr(-160,-52,320,104,50);ctx.fill();
+      ctx.strokeStyle='#FF4A3D';ctx.lineWidth=6;rr(-160,-52,320,104,50);ctx.stroke();
+      ctx.fillStyle='#fff';ctx.fillText('事後',30,4);ctx.restore();
+      emoji('❌',646,1180,64,t,29.5,true);}
+    ctx.restore();}
+  // ドア（閉じていく）＋砂時計
+  if(t>26.5){
+    const a=t<36.2?1:clamp(1-(t-36.2)/.25,0,1);
+    if(a>0){ctx.save();ctx.globalAlpha=a;
+      const closeP=clamp((t-27.96)/2.9,0,1);
+      drawDoor(300,1420,.9,lerp(.95,.02,easeInOut(closeP)),t,false);
+      const sandP=clamp((t-26.5)/7.9,0,1);
+      drawHourglass(795,1420,.9,t,t<34.6?sandP:clamp((t-34.75)/2.5,0,1),34.6);
+      ctx.restore();}}
+  // ただの〇人罪
+  if(t>36.45){
+    megaText([{txt:'ただの〇人罪',size:150,y:1260,fill:'red',rot:-.025}],{t,slam:36.45});
+  }
+}
+
+function sceneCase(t){
+  paperGhost(860,-.025);
+  // 1987カード
+  const cp=popIn(t,38.45,.2);
+  if(cp>0){ctx.save();ctx.translate(W/2,500);ctx.scale(cp,cp);
+    ctx.rotate(Math.sin(t*1.7)*.012);
+    ctx.font=`900 54px ${SANS}`;
+    ctx.fillStyle='rgba(14,90,110,0.92)';rr(-235,-168,470,78,39);ctx.fill();
+    ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('実際の判例',0,-128);
+    megaText([{txt:'1987年',size:180,y:50,fill:'white',font:SERIF}],{t,x:0,pop:1,bob:false});
+    ctx.restore();}
+  if(t<44.2){
+    segText([{t:'1時間後',c:'g'},{t:'に相手を撃った夫に',c:'w'}],{y:800,size:82,t0:40.45,t});
+    if(t>42.3)megaText([{txt:'1時間後でも適用',size:126,y:1060,fill:'gold',rot:-.02}],{t,slam:42.3});
+  }else{
+    segText([{t:'だがこの夫',c:'w'}],{y:780,size:84,t0:44.3,t});
+    const b=boyonSc(t,45.15);
+    if(b){ctx.save();ctx.translate(W/2,960);ctx.scale(b.sx,b.sy);
+      ctx.font=`900 92px ${SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
+      ctx.strokeStyle=COL.ink;ctx.lineWidth=22;ctx.strokeText('隣室の2人を巻き添え',0,0);
+      ctx.strokeStyle='#fff';ctx.lineWidth=9;ctx.strokeText('隣室の2人を巻き添え',0,0);
+      ctx.fillStyle='#FF4A3D';ctx.fillText('隣室の2人を巻き添え',0,0);
+      ctx.restore();}
+    emoji('💥',890,830,120,t,45.3,true);
+    stampBlock(t,46.35,W/2,1230,780,250,'そっちでは有罪',76);
+  }
+}
+
+function scenePunch(t){
+  if(t<52.4){
+    const oa=outSc(t,52.25);
+    ctx.save();ctx.globalAlpha=oa;
+    segText([{t:'ちなみにこの条文',c:'w'}],{y:800,size:82,t0:48.7,t});
+    if(t>50.35)megaText([{txt:'廃止運動の対象',size:118,y:1010,fill:'red',rot:-.02}],{t,slam:50.35});
+    ctx.restore();
+  }else{
+    segText([{t:'誇っている人間は',c:'w'}],{y:850,size:88,t0:52.65,t});
+    if(t>53.5){
+      const a=clamp((t-53.5)/.5,0,1);
+      ctx.save();ctx.globalAlpha=a;
+      megaText([{txt:'誰もいない',size:150,y:1070,fill:'white',rot:-.01}],{t,pop:popIn(t,53.5,.4)});
+      ctx.restore();}
+    if(t>54.75){ctx.save();ctx.globalAlpha=clamp((t-54.75)*3,0,1)*.8;
+      ctx.font=`700 40px ${SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillStyle='#AAB4D4';
+      ctx.fillText('※フィリピン改正刑法 第247条（現行法）',W/2,1560);
+      ctx.restore();}
+  }
+}
+
+// ---------- overlays ----------
+const BADGES={hook:{txt:'フィリピンのヤバい条文',col:'#D6203A',flag:1},
+  law:{txt:'刑法247条',col:'#FFC933'},
+  cond:{txt:'適用条件｜激ムズ',col:'#FFC933',warn:1},
+  case:{txt:'1987年の実例',col:'#5CB6FF'},
+  punch:{txt:'そして現在',col:'#8FA6FF'}};
+function drawBadge(t,sec,secStart){
+  const b=BADGES[sec];if(!b)return;
+  const p=clamp((t-secStart)/.35,0,1);
+  const y=lerp(-70,150,easeOutBack(p));
+  ctx.save();ctx.translate(W/2,y+Math.sin(t*2.1)*4);
+  ctx.font=`900 46px ${SANS}`;
+  const tw=ctx.measureText(b.txt).width;
+  const w=tw+(b.flag||b.warn?190:120);
+  ctx.fillStyle='rgba(5,8,20,0.78)';rr(-w/2,-46,w,92,46);ctx.fill();
+  ctx.strokeStyle=b.col;ctx.lineWidth=5;rr(-w/2,-46,w,92,46);ctx.stroke();
+  let tx=0;
+  if(b.flag){ctx.save();ctx.translate(-w/2+50,-17);drawPHFlagMini(0,0,66);ctx.restore();tx=36;}
+  if(b.warn){ctx.save();ctx.translate(-w/2+58,0);ctx.scale(.32,.32);drawWarnTri(0,10,1,t);ctx.restore();tx=40;}
+  ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(b.txt,tx,3);ctx.restore();
+}
+function drawPHFlagMini(x,y,w){
+  const h=w*.52;
+  ctx.fillStyle=COL.phBlue;ctx.fillRect(x,y,w,h/2);
+  ctx.fillStyle=COL.phRed;ctx.fillRect(x,y+h/2,w,h/2);
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w*.4,y+h/2);ctx.lineTo(x,y+h);ctx.closePath();ctx.fill();
+  ctx.fillStyle=COL.phYellow;ctx.beginPath();ctx.arc(x+w*.13,y+h/2,w*.055,0,7);ctx.fill();
+}
+function drawSubs(t){
+  for(const s of TL.subs){
+    if(t<s.s||t>s.e+.12)continue;
+    const g=ctx.createLinearGradient(0,1440,0,H);
+    g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,0.55)');
+    ctx.fillStyle=g;ctx.fillRect(0,1440,W,H-1440);
+    const n=s.lines.length;
+    const fade=t>s.e?clamp(1-(t-s.e)/.12,0,1):1;
+    for(let i=0;i<n;i++){
+      const y=n===1?1620:1568+i*104;
+      segText(s.lines[i],{y,size:64,t0:s.s+i*.14,t,strokeW:13,alpha:fade});}
+  }
+}
+function drawProgress(t){
+  ctx.fillStyle='rgba(255,255,255,0.14)';ctx.fillRect(0,0,W,10);
+  const w=W*clamp(t/TL.DUR,0,1);
+  ctx.fillStyle=goldGrad(0,10);ctx.fillRect(0,0,w,10);
+  const gl=ctx.createRadialGradient(w,5,0,w,5,26);
+  gl.addColorStop(0,'rgba(255,230,140,0.9)');gl.addColorStop(1,'rgba(255,230,140,0)');
+  ctx.fillStyle=gl;ctx.beginPath();ctx.arc(w,5,26,0,7);ctx.fill();
+}
+const WIPES=[6.64,22.35,38.2,48.55];
+function drawWipes(t){
+  for(const ts of WIPES){const d=(t-ts+.11)/.24;
+    if(d>0&&d<1){const x=lerp(-W*1.6,W*1.7,easeInOut(d));
+      ctx.save();ctx.translate(x,H/2);ctx.rotate(-.35);
+      ctx.fillStyle='#FFC933';ctx.fillRect(-260,-1500,320,3000);
+      ctx.fillStyle='#fff';ctx.fillRect(90,-1500,150,3000);
+      ctx.fillStyle='rgba(214,32,58,0.9)';ctx.fillRect(280,-1500,90,3000);
+      ctx.restore();}}
+}
+function vignetteGrain(t){
+  const vg=ctx.createRadialGradient(W/2,H/2,520,W/2,H/2,1400);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.42)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+  const f=Math.floor(t*30);
+  ctx.globalAlpha=.05;ctx.fillStyle='#fff';
+  for(let i=0;i<110;i++){
+    ctx.fillRect(rnd(i*7+f*13)*W,rnd(i*11+f*17)*H,2.2,2.2);}
+  ctx.globalAlpha=1;
+}
+
+// ---------- main ----------
+function currentSection(t){
+  for(const s of TL.sections)if(t>=s.s&&t<s.e)return s;
+  return TL.sections[TL.sections.length-1];
+}
+window.renderFrame=function(t){
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);
+  const sec=currentSection(t);
+  const off=shakeOffset(t);
+  ctx.save();ctx.translate(off.x,off.y);
+  drawBG(t,sec.id);
+  if(sec.id==='hook')sceneHook(t);
+  else if(sec.id==='law')sceneLaw(t);
+  else if(sec.id==='cond')sceneCond(t);
+  else if(sec.id==='case')sceneCase(t);
+  else scenePunch(t);
+  drawBursts(t);
+  ctx.restore();
+  drawSubs(t);
+  drawBadge(t,sec.id,sec.s);
+  drawProgress(t);
+  drawSpeedlines(t);
+  drawFlashes(t);
+  drawWipes(t);
+  vignetteGrain(t);
+  if(t<.25){ctx.fillStyle=`rgba(0,0,0,${1-t/.25})`;ctx.fillRect(0,0,W,H);}
+  if(t>55.3){ctx.fillStyle=`rgba(0,0,0,${clamp((t-55.3)/.6,0,1)})`;ctx.fillRect(0,0,W,H);}
+};
+
+// ---------- boot ----------
+(async()=>{
+  const loads=[
+    `900 100px ${SANS}`,`700 60px ${SANS}`,`900 100px ${SERIF}`,`100px ${EMOJI}`,
+  ].map(f=>document.fonts.load(f,'刑法条現行殺傷❗❌💥🇵🇭'));
+  try{await Promise.all(loads);await document.fonts.ready;}catch(e){}
+  window.renderFrame(0);
+  window.READY=true;
+})();
+</script>
+</body>
+</html>
