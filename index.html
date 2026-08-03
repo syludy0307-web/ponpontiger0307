@@ -739,7 +739,7 @@ html,body{
         <div class="g-s">ワールドミステリーch</div>
         <div class="g-b">クリックして本を開く</div>
         <div class="g-k">
-          音（ページめくり＝雫の音）を鳴らすためにクリックが必要です<br>
+          ページめくりの音を鳴らすためにクリックが必要です<br>
           Space/→ めくる　← 戻る　P 自動再生　W ワイプ切替　C UI非表示<br>
           F 全画面　Z 原寸1920×1080　[ ] 速度　I 目次　M 消音
         </div>
@@ -1499,7 +1499,7 @@ function endSpread(){
         <h4>図版出典（すべてパブリックドメイン／CC0）</h4>
         ${cr.map(c=>`<div class="row"><b>${c[0]}</b><span>${esc(c[1])}　<i style="font-style:normal;color:var(--ink-3)">${esc(c[2])}　${c[3]}</i></span></div>`).join("")}
         <div class="row" style="margin-top:10px"><b>出典</b><span>Wikimedia Commons</span></div>
-        <div class="row"><b>SE</b><span>ページめくり＝雫の落ちる音</span></div>
+        <div class="row"><b>SE</b><span>ページをめくる音</span></div>
       </div><div class="folio">奥付</div></div>` }
   };
 }
@@ -1666,10 +1666,10 @@ function drainPending(){
 }
 
 /* =========================================================================
-   5. 音（ページめくり＝雫）
+   5. 音（ページめくり）
    ========================================================================= */
 const POOL = [];
-for(let i=0;i<5;i++){ const a=new Audio("assets/se/page-drop.mp3"); a.preload="auto"; a.volume=.82; POOL.push(a); }
+for(let i=0;i<5;i++){ const a=new Audio("assets/se/page-turn.mp3"); a.preload="auto"; a.volume=.82; POOL.push(a); }
 let pi=0, muted=false;
 function playDrop(){
   if(muted) return;
