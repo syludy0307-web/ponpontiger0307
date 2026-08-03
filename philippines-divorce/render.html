@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>PH Divorce Short Renderer</title>
+<style>
+  html,body{margin:0;padding:0;background:#000;overflow:hidden}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="timeline.js"></script>
+<script src="assets/img/photos.js"></script>
+<script>
+'use strict';
+const TL = window.TIMELINE;
+const W = TL.W, H = TL.H;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const IMGS = {};
+
+// ---------- utils ----------
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,p)=>a+(b-a)*p;
+const fract = x=>x-Math.floor(x);
+const rnd = i=>fract(Math.sin(i*127.1+311.7)*43758.5453);
+const easeOutQuad = p=>1-(1-p)*(1-p);
+const easeInQuad = p=>p*p;
+const easeInOut = p=>p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+const easeOutCubic = p=>1-Math.pow(1-p,3);
+const easeOutQuint = p=>1-Math.pow(1-p,5);
+const easeOutBack = (p,s=2.2)=>{const c=s+1;return 1+c*Math.pow(p-1,3)+s*Math.pow(p-1,2);};
+const easeOutElastic = p=>p<=0?0:p>=1?1:Math.pow(2,-10*p)*Math.sin((p*10-0.75)*(2*Math.PI/3))+1;
+const easeOutBounce = p=>{const n=7.5625,d=2.75;
+  if(p<1/d)return n*p*p; if(p<2/d)return n*(p-=1.5/d)*p+.75;
+  if(p<2.5/d)return n*(p-=2.25/d)*p+.9375; return n*(p-=2.625/d)*p+.984375;};
+
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+const SANS='"Noto Sans CJK JP"', SERIF='"Noto Serif CJK JP"', EMOJI='"Noto Color Emoji"';
+const COL={w:'#FFFFFF',r:'#FF4A3D',g:'#FFCF3F',b:'#5CB6FF',ink:'#10131F',
+  phBlue:'#0E4BC3',phRed:'#D6203A',phYellow:'#FCD116',
+  bgTop:'#0B1026',bgBot:'#131F49'};
+
+function goldGrad(y0,y1){const g=ctx.createLinearGradient(0,y0,0,y1);
+  g.addColorStop(0,'#FFF3B0');g.addColorStop(.45,'#FFD34D');g.addColorStop(.55,'#F7A928');g.addColorStop(1,'#FFCE45');return g;}
+
+const mCache=new Map();
+function chW(font,ch){const k=font+'|'+ch;let v=mCache.get(k);
+  if(v===undefined){ctx.font=font;v=ctx.measureText(ch).width;mCache.set(k,v);}return v;}
+
+// ---------- styled segment text ----------
+function segText(segs,o){
+  const font=`900 ${o.size}px ${o.font||SANS}`;
+  const chars=[];
+  for(const s of segs)for(const ch of s.t)chars.push({ch,c:s.c});
+  let total=0;for(const c of chars)total+=chW(font,c.ch);
+  let cx=(o.x!==undefined?o.x:W/2)-total/2;
+  const t=o.t,t0=o.t0,st=o.stagger!==undefined?o.stagger:.022,pd=o.popDur||.17;
+  ctx.save();ctx.textBaseline='middle';ctx.textAlign='center';ctx.lineJoin='round';ctx.lineCap='round';
+  for(let i=0;i<chars.length;i++){
+    const c=chars[i],w=chW(font,c.ch);
+    let sc=1,al=1;
+    if(!o.fixed){
+      const p=(t-(t0+i*st))/pd;
+      if(p<=0){cx+=w;continue;}
+      sc=p>=1?1:easeOutBack(p);al=clamp(p*2.5,0,1);
+    }
+    if(o.kwBounce!==false&&c.c!=='w'&&c.c!=='k')sc*=1+0.045*Math.sin(t*6.5+i*1.3);
+    ctx.save();ctx.translate(cx+w/2,o.y);ctx.scale(sc,sc);
+    ctx.globalAlpha=(o.alpha!==undefined?o.alpha:1)*al;
+    ctx.font=font;
+    ctx.strokeStyle=o.strokeCol||COL.ink;ctx.lineWidth=(o.strokeW!==undefined?o.strokeW:o.size*.18);
+    ctx.strokeText(c.ch,0,0);
+    if(c.c==='g'){ctx.fillStyle=goldGrad(-o.size*.55,o.size*.55);}
+    else ctx.fillStyle=COL[c.c]||c.c||'#fff';
+    ctx.fillText(c.ch,0,0);
+    ctx.restore();
+    cx+=w;
+  }
+  ctx.restore();
+  return total;
+}
+
+function popIn(t,t0,dur=.2){const p=(t-t0)/dur;return p<=0?0:p>=1?1:easeOutBack(p);}
+function elasticIn(t,t0,dur=.55){const p=(t-t0)/dur;return p<=0?0:easeOutElastic(clamp(p,0,1));}
+function boyonSc(t,t0){
+  const p=(t-t0);if(p<0)return null;
+  const sy=easeOutElastic(clamp(p/.6,0,1));
+  const sx=clamp(2-sy,.55,1.45);
+  return {sx,sy};
+}
+function outSc(t,tEnd,dur=.16){
+  if(t<tEnd)return 1;const p=(t-tEnd)/dur;return p>=1?0:1-easeInQuad(p);}
+
+// ---------- photo helpers ----------
+function kbDraw(key,dx,dy,dw,dh,t,o){
+  const img=IMGS[key];if(!img)return false;
+  const iw=img.naturalWidth,ih=img.naturalHeight;
+  const p=clamp((t-(o.t0||0))/((o.t1||1)-(o.t0||0)||1),0,1);
+  const z=lerp(o.z0||1.05,o.z1||1.2,p);
+  const scale=Math.max(dw/iw,dh/ih)*z;
+  const sw=dw/scale,sh=dh/scale;
+  const fx=o.fx!==undefined?o.fx:.5,fy=o.fy!==undefined?o.fy:.5;
+  const sx=clamp(fx*iw-sw/2+(o.panX||0)*p*iw,0,iw-sw);
+  const sy=clamp(fy*ih-sh/2+(o.panY||0)*p*ih,0,ih-sh);
+  ctx.drawImage(img,sx,sy,sw,sh,dx,dy,dw,dh);
+  return true;
+}
+function photoBG(key,t,o,tintTop,tintBot,extra){
+  if(!kbDraw(key,0,0,W,H,t,o)){return;}
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,tintTop);g.addColorStop(1,tintBot);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  if(extra==='red'){const pulse=.5+.5*Math.sin(t*3.4);
+    const rv=ctx.createRadialGradient(W/2,H/2,400,W/2,H/2,1300);
+    rv.addColorStop(0,'rgba(0,0,0,0)');rv.addColorStop(1,`rgba(214,32,58,${0.12+0.12*pulse})`);
+    ctx.fillStyle=rv;ctx.fillRect(0,0,W,H);}
+}
+function photoPanel(key,x,y,w,h,t,tIn,o,label,credit){
+  const p=popIn(t,tIn,.25);if(p<=0)return;
+  ctx.save();ctx.translate(x,y);ctx.scale(p,p);ctx.rotate(o.rot||0);
+  ctx.fillStyle='rgba(0,0,0,0.45)';rr(-w/2+10,-h/2+12,w,h,26);ctx.fill();
+  rr(-w/2,-h/2,w,h,26);ctx.save();ctx.clip();
+  ctx.translate(-w/2,-h/2);
+  kbDraw(key,0,0,w,h,t,o);
+  ctx.fillStyle='rgba(11,16,38,0.22)';ctx.fillRect(0,0,w,h);
+  const vg=ctx.createLinearGradient(0,h*.55,0,h);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.55)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,w,h);
+  if(credit){ctx.font=`500 24px ${SANS}`;ctx.textAlign='right';ctx.textBaseline='bottom';
+    ctx.fillStyle='rgba(255,255,255,0.6)';ctx.fillText(credit,w-16,h-10);}
+  ctx.restore();
+  ctx.strokeStyle='rgba(255,255,255,0.85)';ctx.lineWidth=6;rr(-w/2,-h/2,w,h,26);ctx.stroke();
+  if(label){ctx.font=`900 40px ${SANS}`;
+    const lw=ctx.measureText(label).width+72;
+    ctx.fillStyle='rgba(5,8,20,0.85)';rr(-w/2+22,-h/2-28,lw,64,32);ctx.fill();
+    ctx.strokeStyle='#FFCF3F';ctx.lineWidth=4;rr(-w/2+22,-h/2-28,lw,64,32);ctx.stroke();
+    ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(label,-w/2+58,-h/2+5);}
+  ctx.restore();
+}
+
+// ---------- impacts ----------
+const IMPACTS=[
+  {t:2.02,amp:24,fl:{c:'255,59,48',a:.3},bu:{x:540,y:1200,cols:['#FF5A4E','#fff','#FFC933'],n:28,sp:880},ln:1},
+  {t:3.4,amp:6},
+  {t:4.5,amp:10},
+  {t:5.77,amp:14,fl:{c:'255,255,255',a:.16}},
+  {t:7.72,amp:10,fl:{c:'70,224,160',a:.14}},
+  {t:9.35,amp:7},{t:10.85,amp:8},
+  {t:12.45,amp:8},
+  {t:14.22,amp:22,fl:{c:'255,59,48',a:.3},bu:{x:540,y:1120,cols:['#FF5A4E','#fff'],n:26,sp:850},ln:1},
+  {t:17.4,amp:7},
+  {t:19.45,amp:7},
+  {t:21.82,amp:20,fl:{c:'255,201,51',a:.26},bu:{x:540,y:880,cols:['#FFD34D','#FFF3B0','#fff'],n:26,sp:850},ln:1},
+  {t:23.0,amp:6},
+  {t:24.47,amp:18,fl:{c:'255,201,51',a:.24},bu:{x:540,y:1180,cols:['#FFD34D','#FFF3B0','#fff'],n:24,sp:800},conf:1},
+  {t:26.8,amp:10},
+  {t:30.7,amp:10},
+  {t:34.12,amp:20,fl:{c:'255,201,51',a:.26},bu:{x:540,y:900,cols:['#FFD34D','#FFF3B0','#fff'],n:26,sp:850},ln:1},
+  {t:35.1,amp:10,fl:{c:'255,255,255',a:.12}},
+  {t:37.55,amp:6},
+  {t:41.25,amp:10},
+  {t:43.3,amp:6},
+  {t:46.3,amp:6},
+  {t:46.92,amp:24,fl:{c:'255,201,51',a:.3},bu:{x:540,y:1320,cols:['#FFD34D','#FFF3B0','#fff'],n:32,sp:950},ln:1,conf:1},
+];
+function shakeOffset(t){
+  let x=0,y=0;
+  for(const im of IMPACTS){const d=t-im.t;
+    if(d>0&&d<.5){const k=im.amp*Math.pow(1-d/.5,2.2);
+      const f=Math.floor(t*60);
+      x+=(rnd(f*3.7+im.t*91)-.5)*2*k;y+=(rnd(f*5.3+im.t*57)-.5)*2*k;}}
+  return {x,y};
+}
+function drawFlashes(t){
+  for(const im of IMPACTS){if(!im.fl)continue;const d=t-im.t;
+    if(d>0&&d<.3){ctx.fillStyle=`rgba(${im.fl.c},${im.fl.a*(1-d/.3)})`;ctx.fillRect(0,0,W,H);}}
+}
+function drawBursts(t){
+  for(const im of IMPACTS){
+    if(im.bu){const b=im.bu,d=t-im.t;
+      if(d>0&&d<.75){for(let i=0;i<b.n;i++){
+        const a=rnd(i*7+im.t*13)*Math.PI*2,sp=b.sp*(0.45+rnd(i*3+1)*0.8);
+        const pr=easeOutCubic(clamp(d/.75,0,1));
+        const px=b.x+Math.cos(a)*sp*pr,py=b.y+Math.sin(a)*sp*pr*0.85;
+        const sz=(4+rnd(i*11)*11)*(1-pr);
+        ctx.fillStyle=b.cols[i%b.cols.length];ctx.globalAlpha=1-pr;
+        ctx.save();ctx.translate(px,py);ctx.rotate(a+pr*6);
+        ctx.fillRect(-sz,-sz*.45,sz*2,sz*.9);ctx.restore();}
+        ctx.globalAlpha=1;}}
+    if(im.conf){const d=t-im.t;
+      if(d>0&&d<1.6){for(let i=0;i<26;i++){
+        const x0=rnd(i*13+2)*W,vy=500+rnd(i*17)*420;
+        const px=x0+Math.sin(d*4+i)*60,py=-40+vy*d;
+        if(py>H+40)continue;
+        const cols=['#FFD34D','#FF5A4E','#5CB6FF','#fff','#FCD116'];
+        ctx.fillStyle=cols[i%cols.length];ctx.globalAlpha=clamp(1.6-d,0,1)*.9;
+        ctx.save();ctx.translate(px,py);ctx.rotate(d*7+i);ctx.fillRect(-9,-6,18,12);ctx.restore();}
+        ctx.globalAlpha=1;}}
+  }
+}
+function drawSpeedlines(t){
+  for(const im of IMPACTS){if(!im.ln)continue;const d=t-im.t;
+    if(d>0&&d<.4){const al=(1-d/.4)*.75;
+      ctx.save();ctx.translate(W/2,H/2);
+      for(let i=0;i<26;i++){
+        const a=rnd(i*31+im.t*7)*Math.PI*2+Math.floor(t*30)*.13;
+        const r0=430+rnd(i*5)*180,r1=1250;
+        const wdt=(2+rnd(i*9)*9)*al;
+        ctx.strokeStyle=`rgba(255,255,255,${al*(0.35+rnd(i)*0.6)})`;
+        ctx.lineWidth=wdt;ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*r0,Math.sin(a)*r0);
+        ctx.lineTo(Math.cos(a)*r1,Math.sin(a)*r1);ctx.stroke();}
+      ctx.restore();}}
+}
+
+// ---------- backgrounds ----------
+const SEC_ACCENT={hook:'#FF5A4E',bill:'#FF7A5C',annul:'#7FD7C4',except:'#5CB6FF',punch:'#FFC933'};
+function drawBG(t,sec){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  if(sec==='annul'){g.addColorStop(0,'#0A1420');g.addColorStop(1,'#12324A');}
+  else if(sec==='except'){g.addColorStop(0,'#081419');g.addColorStop(1,'#10333A');}
+  else if(sec==='punch'){g.addColorStop(0,'#05060F');g.addColorStop(1,'#131A38');}
+  else{g.addColorStop(0,COL.bgTop);g.addColorStop(1,COL.bgBot);}
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  const gx=W/2+Math.sin(t*.5)*120,gy=760+Math.cos(t*.4)*90;
+  const rg=ctx.createRadialGradient(gx,gy,0,gx,gy,900);
+  rg.addColorStop(0,'rgba(120,150,255,0.16)');rg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-Math.PI/7);
+  const period=240,off=(t*70)%period;
+  ctx.fillStyle='rgba(255,255,255,0.035)';
+  for(let x=-1700+off;x<1700;x+=period)ctx.fillRect(x,-1400,110,2800);
+  ctx.restore();
+  const ac=SEC_ACCENT[sec]||'#fff';
+  for(let i=0;i<24;i++){
+    const spd=26+rnd(i*3)*44;
+    const px=rnd(i*7)*W+Math.sin(t*(.5+rnd(i)*0.7)+i)*44;
+    const py=(H+140-((t*spd+rnd(i*13)*H)%(H+280)));
+    const sz=2.5+rnd(i*11)*6;
+    ctx.globalAlpha=.10+rnd(i*5)*.16;ctx.fillStyle=i%3?'#FFFFFF':ac;
+    ctx.beginPath();ctx.arc(px,py,sz,0,7);ctx.fill();}
+  ctx.globalAlpha=1;
+  if(sec==='punch'){
+    const sg=ctx.createRadialGradient(W/2,900,80,W/2,900,1050);
+    sg.addColorStop(0,'rgba(255,244,214,0.10)');sg.addColorStop(1,'rgba(0,0,0,0.28)');
+    ctx.fillStyle=sg;ctx.fillRect(0,0,W,H);}
+}
+function paperGhost(cy,rot){
+  ctx.save();ctx.globalAlpha=.07;ctx.translate(W/2,cy);ctx.rotate(rot);
+  ctx.fillStyle='#fff';rr(-430,-480,860,960,26);ctx.fill();
+  ctx.fillStyle='#000';for(let i=0;i<11;i++)rr(-370,-400+i*82,i%3?700:520,20,10),ctx.fill();
+  ctx.restore();
+}
+
+// ---------- vector art ----------
+function drawGavel(x,y,s,t){
+  const T0=46.55,T1=46.92;
+  let ang;
+  if(t<T0)ang=-.62;
+  else if(t<T1)ang=lerp(-.62,.04,easeInQuad((t-T0)/(T1-T0)));
+  else ang=.04+.3*Math.pow(2.71,-(t-T1)*4)*Math.cos((t-T1)*16);
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#7A4B22';rr(-330,116,200,28,8);ctx.fill();
+  ctx.fillStyle='#93602F';rr(-296,84,132,34,8);ctx.fill();
+  ctx.save();ctx.rotate(ang);
+  ctx.fillStyle='#8A5A2B';rr(-206,-11,196,22,10);ctx.fill();
+  ctx.save();ctx.translate(-228,0);
+  ctx.fillStyle='#A9743C';rr(-44,-76,88,152,18);ctx.fill();
+  ctx.fillStyle='#C08A4C';rr(-44,-76,88,26,12);ctx.fill();
+  ctx.fillStyle='#8A5A2B';rr(-44,50,88,26,12);ctx.fill();
+  ctx.restore();
+  ctx.fillStyle='#C08A4C';ctx.beginPath();ctx.arc(0,0,16,0,7);ctx.fill();
+  ctx.restore();ctx.restore();
+}
+// 法案の階段（下院→上院→成立）
+function drawStairs(x,y,s,t){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  const steps=[
+    {x:0,y:0,w:300,label:'下院',state:t>7.6?'ok':'wait'},
+    {x:300,y:-130,w:300,label:'上院',state:t>12.35?'ng':'wait'},
+    {x:600,y:-260,w:300,label:'成立',state:'ghost'},
+  ];
+  for(const st of steps){
+    ctx.save();ctx.translate(st.x,st.y);
+    if(st.state==='ghost'){
+      ctx.setLineDash([18,14]);ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=6;
+      rr(0,-30,st.w,160,14);ctx.stroke();ctx.setLineDash([]);
+      ctx.font=`900 52px ${SANS}`;ctx.fillStyle='rgba(255,255,255,0.45)';
+      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(st.label,st.w/2,50);
+    }else{
+      ctx.fillStyle='#1B2545';rr(0,-30,st.w,160,14);ctx.fill();
+      ctx.strokeStyle=st.state==='ok'?'#46E0A0':st.state==='ng'?'#FF4A3D':'#48587F';
+      ctx.lineWidth=7;rr(0,-30,st.w,160,14);ctx.stroke();
+      ctx.font=`900 56px ${SANS}`;ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(st.label,st.w/2,36);
+      if(st.state==='ok'){const p=popIn(t,7.6,.2);
+        ctx.save();ctx.translate(st.w/2+96,-6);ctx.scale(p,p);
+        ctx.fillStyle='#46E0A0';ctx.beginPath();ctx.arc(0,0,34,0,7);ctx.fill();
+        ctx.strokeStyle='#062018';ctx.lineWidth=10;ctx.lineCap='round';ctx.lineJoin='round';
+        ctx.beginPath();ctx.moveTo(-15,2);ctx.lineTo(-4,14);ctx.lineTo(17,-12);ctx.stroke();ctx.restore();}
+      if(st.state==='ng'){const p=popIn(t,12.35,.2);
+        ctx.save();ctx.translate(st.w/2+96,-6);ctx.scale(p,p);
+        ctx.fillStyle='#FF4A3D';ctx.beginPath();ctx.arc(0,0,34,0,7);ctx.fill();
+        ctx.strokeStyle='#2A0505';ctx.lineWidth=10;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(-13,-13);ctx.lineTo(13,13);ctx.moveTo(13,-13);ctx.lineTo(-13,13);ctx.stroke();ctx.restore();}
+    }
+    ctx.restore();}
+  // 上りかけの棒人間（上院の手前で止まる）
+  const fx=t<7.6?60:t<12.35?lerp(60,330,clamp((t-7.6)/1.2,0,1)):330+Math.sin(t*6)*6;
+  const fy=t<7.6?-70:t<12.35?lerp(-70,-200,clamp((t-7.6)/1.2,0,1)):-200;
+  ctx.save();ctx.translate(fx,fy);
+  ctx.strokeStyle='#fff';ctx.lineWidth=9;ctx.lineCap='round';
+  ctx.beginPath();ctx.arc(0,-40,18,0,7);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,-22);ctx.lineTo(0,18);
+  ctx.moveTo(0,-8);ctx.lineTo(-22,6);ctx.moveTo(0,-8);ctx.lineTo(22,-2);
+  ctx.moveTo(0,18);ctx.lineTo(-16,48);ctx.moveTo(0,18);ctx.lineTo(18,48);ctx.stroke();
+  ctx.restore();
+  ctx.restore();
+}
+// 投票バー
+function drawVoteBar(t,t0,y,label,count,colFill,maxW){
+  const p=popIn(t,t0,.2);if(p<=0)return;
+  const cp=clamp((t-t0)/.9,0,1);
+  const n=Math.floor(count*easeOutCubic(cp));
+  const bw=maxW*(count/140)*easeOutCubic(cp);
+  ctx.save();ctx.translate(110,y);ctx.scale(1,p);
+  ctx.font=`900 44px ${SANS}`;ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.lineJoin='round';ctx.strokeStyle=COL.ink;ctx.lineWidth=10;
+  ctx.strokeText(label,0,0);ctx.fillStyle='#fff';ctx.fillText(label,0,0);
+  ctx.fillStyle='rgba(255,255,255,0.14)';rr(150,-26,640,52,26);ctx.fill();
+  ctx.fillStyle=colFill;rr(150,-26,Math.max(52,bw),52,26);ctx.fill();
+  ctx.font=`900 50px ${SANS}`;ctx.strokeStyle=COL.ink;ctx.lineWidth=11;
+  ctx.strokeText(String(n),160+Math.max(52,bw)+16,0);
+  ctx.fillStyle=colFill;ctx.fillText(String(n),160+Math.max(52,bw)+16,0);
+  ctx.restore();
+}
+// 札束＋₱
+function drawMoney(x,y,s,t,t0){
+  const p=popIn(t,t0,.25);if(p<=0)return;
+  ctx.save();ctx.translate(x,y);ctx.scale(s*p,s*p);
+  for(let i=2;i>=0;i--){
+    ctx.save();ctx.translate(-i*10,i*16);ctx.rotate(-.06+i*.05+Math.sin(t*1.9+i)*.015);
+    ctx.fillStyle='rgba(0,0,0,0.35)';rr(-160+8,-84+10,320,168,16);ctx.fill();
+    ctx.fillStyle=i===0?'#E8D27A':'#CBB35F';rr(-160,-84,320,168,16);ctx.fill();
+    ctx.strokeStyle='#8A7A35';ctx.lineWidth=5;rr(-160,-84,320,168,16);ctx.stroke();
+    ctx.strokeStyle='rgba(138,122,53,0.55)';ctx.lineWidth=3;rr(-140,-64,280,128,10);ctx.stroke();
+    if(i===0){ctx.fillStyle='#8A7A35';ctx.beginPath();ctx.arc(0,0,52,0,7);ctx.fill();
+      ctx.font=`900 64px ${SANS}`;ctx.fillStyle='#F5E9B8';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('₱',0,4);}
+    ctx.restore();}
+  ctx.restore();
+}
+// 書類の山
+function drawPaperStack(x,y,s,t,t0){
+  const p=popIn(t,t0,.25);if(p<=0)return;
+  ctx.save();ctx.translate(x,y);ctx.scale(s*p,s*p);
+  for(let i=7;i>=0;i--){
+    ctx.save();ctx.translate((rnd(i*3)-.5)*26,-i*22);ctx.rotate((rnd(i*7)-.5)*.08);
+    ctx.fillStyle=i===0?'#F7F4EA':'#DDD8C8';rr(-150,-100,300,200,8);ctx.fill();
+    ctx.strokeStyle='rgba(90,90,70,0.5)';ctx.lineWidth=3;rr(-150,-100,300,200,8);ctx.stroke();
+    if(i===0){ctx.fillStyle='#8B90A6';
+      for(let l=0;l<4;l++){rr(-118,-62+l*36,l%2?170:236,12,6);ctx.fill();}}
+    ctx.restore();}
+  ctx.restore();
+}
+// 砂時計
+function drawHourglass(x,y,s,t,p){
+  ctx.save();ctx.translate(x,y);
+  ctx.rotate(Math.sin(t*1.9)*.03);ctx.scale(s,s);
+  ctx.fillStyle='#8A5A2B';rr(-96,-150,192,26,10);ctx.fill();rr(-96,124,192,26,10);ctx.fill();
+  ctx.strokeStyle='rgba(210,225,255,0.55)';ctx.lineWidth=7;
+  ctx.beginPath();ctx.moveTo(-72,-124);ctx.lineTo(72,-124);ctx.lineTo(10,-6);ctx.lineTo(10,6);ctx.lineTo(72,124);ctx.lineTo(-72,124);ctx.lineTo(-10,6);ctx.lineTo(-10,-6);ctx.closePath();ctx.stroke();
+  const pp=clamp(p,0,1);
+  ctx.fillStyle='#FFCF3F';
+  const th=(1-pp)*100;
+  if(th>2){ctx.beginPath();
+    const yTop=-24-th;
+    const half=lerp(12,64,(th)/100);
+    ctx.moveTo(-half,yTop);ctx.lineTo(half,yTop);ctx.lineTo(6,-16);ctx.lineTo(-6,-16);ctx.closePath();ctx.fill();}
+  if(pp>0&&pp<1){ctx.strokeStyle='#FFCF3F';ctx.lineWidth=5;
+    ctx.beginPath();ctx.moveTo(0,-14);ctx.lineTo(0,100);ctx.stroke();}
+  const bh=pp*100;
+  if(bh>2){ctx.beginPath();
+    const half=lerp(10,66,bh/100);
+    ctx.moveTo(-half,118);ctx.lineTo(half,118);ctx.lineTo(0,118-bh);ctx.closePath();ctx.fill();}
+  ctx.restore();
+}
+function emoji(ch,x,y,size,t,t0,wob){
+  const p=elasticIn(t,t0,.5);if(p<=0)return;
+  ctx.save();ctx.translate(x,y);ctx.scale(p,p);
+  if(wob)ctx.rotate(Math.sin(t*5+x)*.09);
+  ctx.font=`${size}px ${EMOJI}`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(ch,0,0);ctx.restore();
+}
+
+// ---------- big blocks ----------
+function megaText(lines,o){
+  ctx.save();
+  const bob=o.bob!==false;
+  const baseX=o.x!==undefined?o.x:W/2;
+  for(const L of lines){
+    const p=o.pop!==undefined?o.pop:1;if(p<=0)continue;
+    ctx.save();
+    const byy=bob?Math.sin(o.t*2.3+L.y)*5:0;
+    ctx.translate(baseX,L.y+byy);
+    ctx.rotate((L.rot||0)+(bob?Math.sin(o.t*1.6+L.y*.7)*.012:0));
+    let sx=p,sy=p;
+    if(o.boyon){const b=boyonSc(o.t,o.boyon);if(!b){ctx.restore();continue;}sx=b.sx;sy=b.sy;}
+    else if(o.slam){const sp=(o.t-o.slam)/.14;
+      if(sp<0){ctx.restore();continue;}
+      const k=sp>=1?1:easeOutQuint(clamp(sp,0,1));sx=sy=2.7-1.7*k;
+      ctx.globalAlpha=clamp(sp*3,0,1);}
+    ctx.scale(sx,sy);
+    ctx.font=`900 ${L.size}px ${L.font||SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.lineJoin='round';ctx.lineCap='round';
+    ctx.strokeStyle=COL.ink;ctx.lineWidth=L.size*.24;ctx.strokeText(L.txt,0,0);
+    ctx.strokeStyle='#fff';ctx.lineWidth=L.size*.09;
+    if(L.fill!=='white')ctx.strokeText(L.txt,0,0);
+    if(L.fill==='red')ctx.fillStyle='#FF3B2F';
+    else if(L.fill==='gold')ctx.fillStyle=goldGrad(-L.size*.55,L.size*.55);
+    else ctx.fillStyle='#fff';
+    ctx.fillText(L.txt,0,0);
+    ctx.restore();}
+  ctx.restore();
+}
+function stampBlock(t,t0,x,y,w,h,txt,size,tEnd){
+  const p=popIn(t,t0,.15);if(p<=0)return;
+  const sc=(2.4-1.4*clamp(p,0,1))*outSc(t,tEnd||1e9);if(sc<=0)return;
+  ctx.save();ctx.translate(x,y);ctx.rotate(-.09);ctx.scale(sc,sc);
+  ctx.globalAlpha=clamp((t-t0)*7,0,1)*.96;
+  ctx.fillStyle='rgba(120,10,15,0.30)';rr(-w/2,-h/2,w,h,18);ctx.fill();
+  ctx.strokeStyle='#FF4A3D';ctx.lineWidth=10;rr(-w/2,-h/2,w,h,18);ctx.stroke();
+  ctx.strokeStyle='rgba(255,74,61,0.55)';ctx.lineWidth=4;rr(-w/2+14,-h/2+14,w-28,h-28,12);ctx.stroke();
+  for(let i=0;i<14;i++){ctx.fillStyle=`rgba(255,74,61,${.2+rnd(i)*.3})`;
+    ctx.beginPath();ctx.arc((rnd(i*3)-.5)*w,(rnd(i*7)-.5)*h,3+rnd(i*11)*5,0,7);ctx.fill();}
+  ctx.font=`900 ${size}px ${SERIF}`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineJoin='round';ctx.strokeStyle='#10131F';ctx.lineWidth=size*.16;ctx.strokeText(txt,0,4);
+  ctx.fillStyle='#FF4A3D';ctx.fillText(txt,0,4);
+  ctx.restore();
+}
+function pillBlock(t,t0,x,y,txt,size,border,fill,boyon){
+  let sx=1,sy=1;
+  if(boyon){const b=boyonSc(t,t0);if(!b)return;sx=b.sx;sy=b.sy;}
+  else{const p=popIn(t,t0,.2);if(p<=0)return;sx=sy=p;}
+  ctx.save();ctx.translate(x,y);ctx.scale(sx,sy);
+  ctx.font=`900 ${size}px ${SANS}`;
+  const pw=ctx.measureText(txt).width+130;
+  ctx.fillStyle='rgba(6,9,22,0.82)';rr(-pw/2,-size*1.05,pw,size*2.1,size*1.05);ctx.fill();
+  ctx.strokeStyle=border;ctx.lineWidth=7;rr(-pw/2,-size*1.05,pw,size*2.1,size*1.05);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
+  ctx.strokeStyle=COL.ink;ctx.lineWidth=size*.16;ctx.strokeText(txt,0,2);
+  if(fill==='gold')ctx.fillStyle=goldGrad(-size,size);else ctx.fillStyle=fill;
+  ctx.fillText(txt,0,2);
+  ctx.restore();
+}
+
+// ---------- scenes ----------
+function sceneHook(t){
+  photoBG('cathedral',t,{fx:.5,fy:.3,z0:1.05,z1:1.25,t0:0,t1:5.56},'rgba(8,10,26,0.55)','rgba(8,10,26,0.84)','red');
+  ctx.font=`500 24px ${SANS}`;ctx.textAlign='right';ctx.textBaseline='top';
+  ctx.fillStyle='rgba(255,255,255,0.45)';ctx.fillText('Photo: Markadan / CC BY 4.0',W-24,26);
+  if(t<3.1){
+    const oa=outSc(t,2.95);
+    ctx.save();ctx.globalAlpha=oa;
+    segText([{t:'フィリピンには',c:'w'}],{y:840,size:86,t0:0.15,t});
+    segText([{t:'離婚',c:'r'},{t:'という制度が',c:'w'}],{y:995,size:94,t0:0.85,t});
+    megaText([{txt:'存在しない',size:150,y:1200,fill:'red',rot:-.02}],{t,slam:1.9});
+    ctx.restore();
+  }else{
+    segText([{t:'世界で',c:'w'},{t:'バチカン市国',c:'g'},{t:'と',c:'w'}],{y:880,size:84,t0:3.25,t});
+    megaText([{txt:'ここだけ',size:170,y:1130,fill:'gold',rot:-.02}],{t,boyon:4.4});
+    emoji('🇻🇦',400,1370,130,t,4.6,true);
+    emoji('🇵🇭',680,1370,130,t,4.75,true);
+  }
+}
+
+function sceneBill(t){
+  // タイトルカード
+  const cp=popIn(t,5.65,.2);
+  if(cp>0){ctx.save();ctx.translate(W/2,430);ctx.scale(cp,cp);
+    ctx.rotate(Math.sin(t*1.7)*.012);
+    ctx.font=`900 50px ${SANS}`;
+    ctx.fillStyle='rgba(214,32,58,0.92)';rr(-200,-146,400,72,36);ctx.fill();
+    ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('2024年',0,-110);
+    megaText([{txt:'離婚法案',size:150,y:44,fill:'white',font:SERIF}],{t,x:0,pop:1,bob:false});
+    ctx.restore();}
+  // 下院本会議場写真（〜9.1）
+  if(t>6.0&&t<9.2){
+    ctx.save();ctx.globalAlpha=outSc(t,9.05);
+    photoPanel('congress',W/2,1090,880,460,t,6.05,{fx:.5,fy:.45,z0:1.04,z1:1.16,t0:6,t1:9.2},'下院本会議場','House of Representatives / PD');
+    ctx.restore();}
+  // 投票バー
+  if(t>9.25&&t<12.3){
+    drawVoteBar(t,9.25,1000,'賛成',131,'#5CB6FF',640);
+    if(t>10.75)drawVoteBar(t,10.75,1120,'反対',109,'#FF4A3D',640);}
+  // 階段ビジュアル
+  if(t>11.9){
+    drawStairs(80,1330,1,t);
+    if(t>14.1)stampBlock(t,14.1,W/2,1120,700,240,'廃 案',110);
+    if(t>17.3)pillBlock(t,17.3,W/2,1440,'今も委員会で停止中',48,'#FF4A3D','#fff');
+  }
+}
+
+function sceneAnnul(t){
+  paperGhost(830,.03);
+  // どうやって？
+  if(t<21.6){
+    segText([{t:'では、どうやって',c:'w'}],{y:900,size:92,t0:19.35,t});
+    segText([{t:'解消する？',c:'w'}],{y:1060,size:92,t0:20.3,t});
+  }else{
+    const dock=clamp((t-24.3)/.3,0,1);
+    const my=lerp(900,620,easeInOut(dock));
+    const msz=lerp(140,96,easeInOut(dock));
+    megaText([{txt:'アナルメント',size:msz,y:my,fill:'gold',rot:-.02}],{t,slam:21.7});
+    if(t>22.9&&t<24.3)pillBlock(t,22.9,W/2,1090,'＝婚姻無効の裁判',54,'#fff','#fff');
+    if(t>24.35){
+      const ga=outSc(t,30.45);
+      if(ga>0){ctx.save();ctx.globalAlpha=ga;
+        drawMoney(300,1010,1,t,24.35);
+        megaText([{txt:'30〜50万ペソ',size:110,y:1230,fill:'gold',rot:-.02}],{t,slam:24.35});
+        if(t>25.3)segText([{t:'（約80〜130万円）',c:'w'}],{x:420,y:1345,size:46,t0:25.35,t});
+        if(t>26.7){
+          drawHourglass(830,1000,.8,t,clamp((t-26.7)/4,0,1));
+          pillBlock(t,26.7,845,1345,'2〜4年',56,'#FFCF3F','gold');}
+        ctx.restore();}
+    }
+    if(t>30.6){
+      drawPaperStack(350,1230,.9,t,30.6);
+      pillBlock(t,30.6,W/2+40,1330,'書類上の夫婦のまま',54,'#FF4A3D','#FF4A3D',true);
+    }
+  }
+}
+
+function sceneExcept(t){
+  paperGhost(860,-.025);
+  if(t>32.3&&t<34.0)segText([{t:'だが',c:'w'},{t:'外国人と結婚',c:'g'},{t:'なら',c:'w'}],{y:700,size:84,t0:32.35,t});
+  if(t>34.0)megaText([{txt:'例外がある',size:140,y:760,fill:'gold',rot:-.02}],{t,slam:34.0});
+  // 2018最高裁カード＋写真
+  if(t>35.0){
+    pillBlock(t,35.0,W/2,970,'2018年 最高裁判例',52,'#5CB6FF','#fff');
+    photoPanel('court2',W/2,1290,840,440,t,35.3,{fx:.5,fy:.16,z0:1.12,z1:1.28,t0:35.3,t1:43},'フィリピン最高裁','Patrickroque01 / CC BY-SA 4.0');
+  }
+  if(t>37.45){
+    ctx.save();
+    segText([{t:'日本人の夫',c:'w'},{t:'と日本で離婚',c:'g'}],{y:1600,size:66,t0:37.45,t});
+    ctx.restore();
+    emoji('🇯🇵',170,1520,96,t,37.7,true);
+  }
+  if(t>41.15)pillBlock(t,41.15,W/2,1740,'フィリピンでも離婚が認められた',44,'#46E0A0','#46E0A0',true);
+}
+
+function scenePunch(t){
+  drawGavel(760,560,.8,t);
+  segText([{t:'ただし、その承認にも',c:'w'}],{y:820,size:78,t0:43.2,t});
+  segText([{t:'フィリピンでの',c:'w'},{t:'裁判',c:'r'},{t:'がいる',c:'w'}],{y:960,size:82,t0:44.1,t});
+  if(t>46.2)segText([{t:'結局',c:'w'}],{y:1130,size:80,t0:46.25,t});
+  if(t>46.8){
+    megaText([
+      {txt:'どのルートも',size:112,y:1290,fill:'white',rot:-.01},
+      {txt:'裁判所だ',size:190,y:1480,fill:'gold',rot:-.02}],{t,slam:46.8});
+  }
+  if(t>48.35){ctx.save();ctx.globalAlpha=clamp((t-48.35)*3,0,1)*.85;
+    ctx.font=`700 36px ${SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#AAB4D4';
+    ctx.fillText('※アナルメント＝婚姻無効の裁判',W/2,1640);
+    ctx.font=`500 20px ${SANS}`;ctx.fillStyle='rgba(170,180,212,0.7)';
+    ctx.fillText('Photos: Wikimedia Commons — Markadan（CC BY 4.0）/ Patrickroque01（CC BY-SA 4.0）',W/2,1692);
+    ctx.fillText('House of Representatives of the Philippines（Public domain）',W/2,1726);
+    ctx.restore();}
+}
+
+// ---------- overlays ----------
+const BADGES={hook:{txt:'離婚が存在しない国',col:'#D6203A',flag:1},
+  bill:{txt:'2024年の離婚法案',col:'#FFCF3F'},
+  annul:{txt:'唯一の解消ルート',col:'#7FD7C4'},
+  except:{txt:'外国人と結婚した場合',col:'#5CB6FF'},
+  punch:{txt:'結論',col:'#FFC933'}};
+function drawBadge(t,sec,secStart){
+  const b=BADGES[sec];if(!b)return;
+  const p=clamp((t-secStart)/.35,0,1);
+  const y=lerp(-70,150,easeOutBack(p));
+  ctx.save();ctx.translate(W/2,y+Math.sin(t*2.1)*4);
+  ctx.font=`900 46px ${SANS}`;
+  const tw=ctx.measureText(b.txt).width;
+  const w=tw+(b.flag?190:120);
+  ctx.fillStyle='rgba(5,8,20,0.78)';rr(-w/2,-46,w,92,46);ctx.fill();
+  ctx.strokeStyle=b.col;ctx.lineWidth=5;rr(-w/2,-46,w,92,46);ctx.stroke();
+  let tx=0;
+  if(b.flag){ctx.save();ctx.translate(-w/2+50,-17);drawPHFlagMini(0,0,66);ctx.restore();tx=36;}
+  ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(b.txt,tx,3);ctx.restore();
+}
+function drawPHFlagMini(x,y,w){
+  const h=w*.52;
+  ctx.fillStyle=COL.phBlue;ctx.fillRect(x,y,w,h/2);
+  ctx.fillStyle=COL.phRed;ctx.fillRect(x,y+h/2,w,h/2);
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w*.4,y+h/2);ctx.lineTo(x,y+h);ctx.closePath();ctx.fill();
+  ctx.fillStyle=COL.phYellow;ctx.beginPath();ctx.arc(x+w*.13,y+h/2,w*.055,0,7);ctx.fill();
+}
+function drawSubs(t){
+  for(const s of TL.subs){
+    if(t<s.s||t>s.e+.12)continue;
+    const g=ctx.createLinearGradient(0,1440,0,H);
+    g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,0.55)');
+    ctx.fillStyle=g;ctx.fillRect(0,1440,W,H-1440);
+    const n=s.lines.length;
+    const fade=t>s.e?clamp(1-(t-s.e)/.12,0,1):1;
+    for(let i=0;i<n;i++){
+      const y=n===1?1620:1568+i*104;
+      segText(s.lines[i],{y,size:64,t0:s.s+i*.14,t,strokeW:13,alpha:fade});}
+  }
+}
+function drawProgress(t){
+  ctx.fillStyle='rgba(255,255,255,0.14)';ctx.fillRect(0,0,W,10);
+  const w=W*clamp(t/TL.DUR,0,1);
+  ctx.fillStyle=goldGrad(0,10);ctx.fillRect(0,0,w,10);
+  const gl=ctx.createRadialGradient(w,5,0,w,5,26);
+  gl.addColorStop(0,'rgba(255,230,140,0.9)');gl.addColorStop(1,'rgba(255,230,140,0)');
+  ctx.fillStyle=gl;ctx.beginPath();ctx.arc(w,5,26,0,7);ctx.fill();
+}
+const WIPES=[5.56,19.12,32.2,43.08];
+function drawWipes(t){
+  for(const ts of WIPES){const d=(t-ts+.11)/.24;
+    if(d>0&&d<1){const x=lerp(-W*1.6,W*1.7,easeInOut(d));
+      ctx.save();ctx.translate(x,H/2);ctx.rotate(-.35);
+      ctx.fillStyle='#FFC933';ctx.fillRect(-260,-1500,320,3000);
+      ctx.fillStyle='#fff';ctx.fillRect(90,-1500,150,3000);
+      ctx.fillStyle='rgba(214,32,58,0.9)';ctx.fillRect(280,-1500,90,3000);
+      ctx.restore();}}
+}
+function vignetteGrain(t){
+  const vg=ctx.createRadialGradient(W/2,H/2,520,W/2,H/2,1400);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.42)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+  const f=Math.floor(t*30);
+  ctx.globalAlpha=.05;ctx.fillStyle='#fff';
+  for(let i=0;i<110;i++){
+    ctx.fillRect(rnd(i*7+f*13)*W,rnd(i*11+f*17)*H,2.2,2.2);}
+  ctx.globalAlpha=1;
+}
+
+// ---------- main ----------
+function currentSection(t){
+  for(const s of TL.sections)if(t>=s.s&&t<s.e)return s;
+  return TL.sections[TL.sections.length-1];
+}
+window.renderFrame=function(t){
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);
+  const sec=currentSection(t);
+  const off=shakeOffset(t);
+  ctx.save();ctx.translate(off.x,off.y);
+  drawBG(t,sec.id);
+  if(sec.id==='hook')sceneHook(t);
+  else if(sec.id==='bill')sceneBill(t);
+  else if(sec.id==='annul')sceneAnnul(t);
+  else if(sec.id==='except')sceneExcept(t);
+  else scenePunch(t);
+  drawBursts(t);
+  ctx.restore();
+  drawSubs(t);
+  drawBadge(t,sec.id,sec.s);
+  drawProgress(t);
+  drawSpeedlines(t);
+  drawFlashes(t);
+  drawWipes(t);
+  vignetteGrain(t);
+  if(t<.25){ctx.fillStyle=`rgba(0,0,0,${1-t/.25})`;ctx.fillRect(0,0,W,H);}
+  if(t>48.85){ctx.fillStyle=`rgba(0,0,0,${clamp((t-48.85)/.6,0,1)})`;ctx.fillRect(0,0,W,H);}
+};
+
+// ---------- boot ----------
+(async()=>{
+  const loads=[
+    `900 100px ${SANS}`,`700 60px ${SANS}`,`900 100px ${SERIF}`,`100px ${EMOJI}`,
+  ].map(f=>document.fonts.load(f,'離婚法案廃裁判所₱🇻🇦🇵🇭🇯🇵'));
+  try{await Promise.all(loads);await document.fonts.ready;}catch(e){}
+  await Promise.all(Object.entries(window.PHOTOS||{}).map(([k,src])=>new Promise(res=>{
+    const im=new Image();im.onload=()=>{IMGS[k]=im;res()};im.onerror=()=>res();im.src=src;})));
+  window.renderFrame(0);
+  window.READY=true;
+})();
+</script>
+</body>
+</html>
