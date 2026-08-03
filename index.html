@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ワールドミステリーch ／ 「夢の中で死ぬと現実でも死ぬ」説</title>
+<style>
+/* =========================================================================
+   ワールドミステリーch  —  古書ページめくり型 動画用ビジュアル
+   16:9 / 1920x1080 固定ステージ
+   ========================================================================= */
+
+:root{
+  --stage-w: 1920px;
+  --stage-h: 1080px;
+
+  /* 本体レイアウト */
+  --pw: 600px;              /* 1ページ幅 */
+  --bw: 1200px;             /* 見開き幅 */
+  --bh: 830px;              /* 本の高さ */
+  --book-x: 200px;
+  --book-y: 118px;
+
+  /* ワイプ枠 */
+  --wipe-w: 460px;
+  --wipe-h: 259px;
+  --wipe-r: 42px;
+  --wipe-b: 46px;
+
+  /* 配色 */
+  --paper:   #d8c9a7;
+  --paper-d: #b9a276;
+  --ink:     #2b2017;
+  --ink-2:   #4b3a29;
+  --ink-3:   #6d5942;
+  --accent:  #8d2b20;
+  --accent-2:#c2432f;
+  --gold:    #b99150;
+
+  --tiltY: 0deg;
+  --tiltX: 4.5deg;
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+
+html,body{
+  width:100%; height:100%;
+  background:#000; overflow:hidden;
+  font-family:"Yu Mincho","YuMincho","Hiragino Mincho ProN","Hiragino Mincho Pro",
+              "Noto Serif JP","Source Han Serif JP","HGS明朝E","MS PMincho",serif;
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  cursor:default;
+}
+
+/* ---------- ステージ（16:9 固定・画面にフィット） ---------- */
+#viewport{ position:fixed; inset:0; background:#000; display:grid; place-items:center; overflow:hidden; }
+#stage{
+  position:relative;
+  width:var(--stage-w); height:var(--stage-h);
+  transform-origin:center center;
+  overflow:hidden;
+  background:#0a0806;
+  isolation:isolate;
+}
+
+/* =========================================================================
+   背景：古びた廃墟
+   ========================================================================= */
+.bg{ position:absolute; inset:-4%; pointer-events:none; }
+
+.bg-photo{
+  background:url("assets/img/bg-ruin.jpg") center 42%/cover no-repeat;
+  filter:grayscale(.82) sepia(.42) brightness(.30) contrast(1.35);
+  animation:bgDrift 96s ease-in-out infinite alternate;
+  transform-origin:52% 48%;
+}
+@keyframes bgDrift{
+  0%  { transform:scale(1.06) translate3d(0,0,0); }
+  100%{ transform:scale(1.16) translate3d(-1.4%,-1.1%,0); }
+}
+
+/* 銅版画（ピラネージ）の重ね：不穏な奥行き */
+.bg-etch{
+  background:url("assets/img/bg-carceri.jpg") center 30%/cover no-repeat;
+  filter:grayscale(1) contrast(1.5) brightness(.42);
+  mix-blend-mode:overlay; opacity:.30;
+  animation:bgDrift2 132s ease-in-out infinite alternate;
+}
+@keyframes bgDrift2{
+  0%  { transform:scale(1.22) translate3d(1.2%,0.6%,0); }
+  100%{ transform:scale(1.08) translate3d(-0.8%,-0.4%,0); }
+}
+
+/* 差し込む光条 */
+.shaft{
+  position:absolute; top:-30%; width:340px; height:190%;
+  background:linear-gradient(to bottom, rgba(255,236,190,.115), rgba(255,225,170,.03) 55%, transparent 82%);
+  filter:blur(26px); transform-origin:top center; mix-blend-mode:screen; pointer-events:none;
+}
+.shaft.s1{ left:6%;  transform:rotate(13deg);  animation:shaftBreathe 17s ease-in-out infinite; }
+.shaft.s2{ left:62%; transform:rotate(-9deg);  width:250px; opacity:.7; animation:shaftBreathe 23s ease-in-out infinite reverse; }
+.shaft.s3{ left:33%; transform:rotate(4deg);   width:180px; opacity:.45; animation:shaftBreathe 29s ease-in-out infinite; }
+@keyframes shaftBreathe{ 0%,100%{opacity:.55} 40%{opacity:.95} 70%{opacity:.42} }
+
+/* 埃：canvas */
+#dust{ position:absolute; inset:0; pointer-events:none; mix-blend-mode:screen; }
+
+/* 粒子・ヴィネット・フィルムノイズ */
+.vignette{
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(122% 88% at 46% 42%, transparent 26%, rgba(0,0,0,.42) 68%, rgba(0,0,0,.88) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,.55), transparent 26%, transparent 74%, rgba(0,0,0,.62));
+}
+.grain{
+  position:absolute; inset:-60px; pointer-events:none; opacity:.16; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='240' height='240' filter='url(%23n)'/></svg>");
+  animation:grainShift .5s steps(1) infinite;
+}
+@keyframes grainShift{
+  0%{transform:translate(0,0)} 20%{transform:translate(-14px,9px)} 40%{transform:translate(11px,-13px)}
+  60%{transform:translate(-8px,-7px)} 80%{transform:translate(13px,6px)} 100%{transform:translate(0,0)}
+}
+.flickerlayer{
+  position:absolute; inset:0; pointer-events:none; background:#000; opacity:0;
+  animation:roomFlicker 11s steps(1) infinite;
+}
+@keyframes roomFlicker{
+  0%,88%,100%{opacity:0} 89%{opacity:.30} 90%{opacity:0} 91.5%{opacity:.20} 92%{opacity:0}
+  95%{opacity:.14} 95.6%{opacity:0}
+}
+
+/* =========================================================================
+   本体（3D ブック）
+   ========================================================================= */
+#book3d{
+  position:absolute; left:var(--book-x); top:var(--book-y);
+  width:var(--bw); height:var(--bh);
+  perspective:2700px; perspective-origin:50% 44%;
+}
+#book{
+  position:relative; width:100%; height:100%;
+  transform-style:preserve-3d;
+  transform:rotateX(var(--tiltX)) rotateY(var(--tiltY));
+  transition:transform .5s cubic-bezier(.2,.7,.3,1);
+  filter:drop-shadow(0 46px 60px rgba(0,0,0,.85)) drop-shadow(0 8px 14px rgba(0,0,0,.6));
+}
+
+/* 本の厚み（小口） */
+.edge{
+  position:absolute; top:10px; height:calc(100% - 20px);
+  transform:translateZ(-9px);
+  background:
+    repeating-linear-gradient(to right, #cbbd9c 0 1px, #a8956e 1px 2px, #d7cbaa 2px 4px);
+  box-shadow:0 14px 22px rgba(0,0,0,.6);
+  border-radius:2px;
+  transition:width .7s ease, left .7s ease;
+}
+.edge-l{ left:0;  width:6px;  border-radius:3px 0 0 3px; }
+.edge-r{ right:0; width:34px; border-radius:0 3px 3px 0; }
+
+/* 表紙（下地） */
+.board{
+  position:absolute; inset:-16px -20px -20px -20px; transform:translateZ(-16px);
+  border-radius:6px 10px 10px 6px;
+  background:
+    radial-gradient(120% 100% at 20% 0%, #4a2f22, #2d1c14 60%, #1b100b 100%);
+  box-shadow:inset 0 0 0 2px rgba(185,145,80,.22), inset 0 0 60px rgba(0,0,0,.8);
+}
+.board::after{
+  content:""; position:absolute; inset:14px; border:1px solid rgba(185,145,80,.20); border-radius:3px;
+}
+
+/* ページ共通 */
+.page{
+  position:absolute; top:0; width:var(--pw); height:100%;
+  overflow:hidden;
+  background:var(--paper);
+}
+.page-l{ left:0; border-radius:3px 0 0 3px; }
+.page-r{ left:var(--pw); border-radius:0 3px 3px 0; }
+.page-static{ transform:translateZ(0); }
+
+/* 紙のテクスチャ */
+.paper{
+  position:absolute; inset:0; overflow:hidden;
+  background:
+    radial-gradient(90% 70% at 28% 12%, rgba(255,248,224,.60), transparent 62%),
+    radial-gradient(70% 60% at 84% 88%, rgba(120,86,44,.26), transparent 72%),
+    radial-gradient(40% 30% at 12% 78%, rgba(126,92,50,.22), transparent 70%),
+    linear-gradient(160deg, #e0d2b2 0%, var(--paper) 42%, var(--paper-d) 100%);
+}
+.paper::before{
+  content:""; position:absolute; inset:0; opacity:.30; mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4'/><feColorMatrix type='saturate' values='0'/></filter><rect width='200' height='200' filter='url(%23p)'/></svg>");
+}
+/* 染み（foxing） */
+.paper::after{
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:.5; mix-blend-mode:multiply;
+  background:
+    radial-gradient(24px 17px at 14% 24%, rgba(122,84,40,.42), transparent 70%),
+    radial-gradient(38px 26px at 78% 16%, rgba(122,84,40,.26), transparent 72%),
+    radial-gradient(16px 12px at 66% 62%, rgba(110,72,32,.34), transparent 70%),
+    radial-gradient(52px 30px at 30% 90%, rgba(110,72,32,.22), transparent 74%),
+    radial-gradient(12px 9px  at 88% 74%, rgba(96,62,28,.40), transparent 70%);
+}
+/* ノド（綴じ側）の陰 */
+.gutter{ position:absolute; top:0; bottom:0; width:120px; pointer-events:none; }
+.page-l .gutter, .face-left .gutter{ right:0;
+  background:linear-gradient(to right, transparent, rgba(58,38,18,.10) 55%, rgba(44,28,12,.46)); }
+.page-r .gutter, .face-right .gutter{ left:0;
+  background:linear-gradient(to left, transparent, rgba(58,38,18,.10) 55%, rgba(44,28,12,.46)); }
+/* 小口側の焼け */
+.foreedge{ position:absolute; top:0; bottom:0; width:66px; pointer-events:none; }
+.page-l .foreedge, .face-left .foreedge{ left:0;
+  background:linear-gradient(to right, rgba(76,50,22,.38), transparent); }
+.page-r .foreedge, .face-right .foreedge{ right:0;
+  background:linear-gradient(to left, rgba(76,50,22,.38), transparent); }
+
+/* めくれる葉 */
+.leaf{
+  position:absolute; top:0; width:var(--pw); height:100%;
+  transform-style:preserve-3d; visibility:hidden;
+  will-change:transform;
+}
+.leaf-fwd{ left:var(--pw); transform-origin:left center;  transform:translateZ(4px) rotateY(0deg); }
+.leaf-bwd{ left:0;         transform-origin:right center; transform:translateZ(4px) rotateY(0deg); }
+.leaf-face{
+  position:absolute; inset:0; overflow:hidden;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  background:var(--paper);
+}
+.face-back{ transform:rotateY(180deg); }
+.shade{
+  position:absolute; inset:0; pointer-events:none; opacity:0;
+  background:linear-gradient(to var(--shdir,left), rgba(20,10,4,.86), rgba(20,10,4,.16) 62%, transparent);
+}
+.face-right .shade{ --shdir:left; }
+.face-left  .shade{ --shdir:right; }
+
+/* めくり時に静止ページへ落ちる影 */
+.cast{ position:absolute; top:0; height:100%; width:var(--pw); pointer-events:none; opacity:0; transform:translateZ(2px); }
+.cast-l{ left:0;         background:linear-gradient(to left, rgba(12,7,2,.72), rgba(12,7,2,.22) 45%, transparent 78%); }
+.cast-r{ left:var(--pw); background:linear-gradient(to right, rgba(12,7,2,.72), rgba(12,7,2,.22) 45%, transparent 78%); }
+
+/* 背（センター） */
+.spine{
+  position:absolute; left:calc(var(--pw) - 13px); top:-6px; width:26px; height:calc(100% + 12px);
+  transform:translateZ(-6px); pointer-events:none; border-radius:2px;
+  background:linear-gradient(to right, rgba(30,18,8,.0), rgba(30,18,8,.62) 45%, rgba(30,18,8,.62) 55%, rgba(30,18,8,.0));
+}
+
+/* =========================================================================
+   ページ内容
+   ========================================================================= */
+.pad{ position:absolute; inset:0; padding:52px 66px; display:flex; flex-direction:column; }
+.page-r .pad, .face-right .pad{ padding-left:86px; }
+.page-l .pad, .face-left  .pad{ padding-right:86px; }
+
+/* 柱（ランニングヘッド） */
+.runhead{
+  display:flex; align-items:baseline; gap:14px;
+  font-size:16px; letter-spacing:.34em; color:var(--ink-3);
+  border-bottom:1px solid rgba(70,48,24,.34); padding-bottom:12px; margin-bottom:22px;
+  flex:0 0 auto;
+}
+.runhead .num{
+  font-size:14px; letter-spacing:.14em; color:var(--accent);
+  border:1px solid rgba(141,43,32,.5); padding:2px 8px; border-radius:2px; white-space:nowrap;
+}
+.runhead .ttl{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* 本文 */
+.body{ flex:1; min-height:0; overflow:hidden; --fs:25px; --lh:1.98; --gap:.56; --st:.30s; }
+.body p{
+  font-size:var(--fs); line-height:var(--lh); letter-spacing:.055em;
+  margin:0 0 calc(var(--fs) * var(--gap)); color:var(--ink);
+  text-shadow:0 1px 0 rgba(255,248,225,.42);
+  opacity:0; transform:translateY(14px);
+}
+.body p:last-child{ margin-bottom:0; }
+.anim .body p{ animation:riseIn .95s cubic-bezier(.16,.8,.3,1) forwards; animation-delay:calc(var(--i) * var(--st) + .18s); }
+.noanim .body p{ opacity:1; transform:none; }
+@keyframes riseIn{ to{ opacity:1; transform:none; } }
+.body p.q{ color:var(--accent); font-weight:600; letter-spacing:.07em; }
+.body p.lead{ font-size:calc(var(--fs) * 1.08); }
+
+/* ノンブル */
+.folio{
+  flex:0 0 auto; padding-top:12px; font-size:15px; letter-spacing:.3em; color:var(--ink-3);
+  display:flex; align-items:center; gap:12px;
+}
+.page-r .folio, .face-right .folio{ justify-content:flex-end; }
+.folio::before{ content:""; flex:1; height:1px; background:linear-gradient(to right, transparent, rgba(70,48,24,.34)); }
+.page-r .folio::before, .face-right .folio::before{ background:linear-gradient(to left, transparent, rgba(70,48,24,.34)); }
+
+/* --- 図版ページ --- */
+.plate{ flex:1; display:flex; flex-direction:column; min-height:0; }
+.plate-frame{
+  position:relative; flex:1; min-height:0; overflow:hidden;
+  border:1px solid rgba(64,42,20,.55);
+  box-shadow:0 0 0 7px rgba(214,198,164,.55), 0 14px 26px rgba(52,34,14,.42), inset 0 0 46px rgba(52,32,12,.55);
+  background:#221a12;
+}
+.plate-frame img{
+  width:100%; height:100%; object-fit:cover; display:block;
+  filter:sepia(.55) saturate(.72) contrast(1.12) brightness(.88);
+  transform:scale(1.02);
+  animation:plateBreathe 26s ease-in-out infinite alternate;
+}
+@keyframes plateBreathe{ from{ transform:scale(1.02) } to{ transform:scale(1.10) } }
+/* 解剖図など：全体を見せる */
+.plate-frame.fit-contain{ background:#161009; }
+.plate-frame.fit-contain img{
+  object-fit:contain; padding:16px; animation:none; transform:none;
+  filter:sepia(.42) saturate(.6) contrast(1.05) brightness(.94);
+}
+.plate-frame::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(105% 85% at 50% 44%, transparent 40%, rgba(38,24,8,.62) 100%),
+    linear-gradient(to bottom, rgba(232,220,190,.16), transparent 30%);
+  mix-blend-mode:multiply;
+}
+.plate-cap{ flex:0 0 auto; padding-top:16px; font-size:16px; line-height:1.72; color:var(--ink-2); }
+.plate-cap .t{ display:block; font-size:19px; color:var(--ink); letter-spacing:.06em; }
+.plate-cap .s{ display:block; font-size:14px; color:var(--ink-3); letter-spacing:.08em; margin-top:3px; }
+.plate-cap .n{ display:block; margin-top:9px; font-size:15px; color:var(--ink-2); border-left:2px solid rgba(141,43,32,.55); padding-left:11px; }
+
+/* --- 引用ページ --- */
+.quote{ flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:26px; }
+.quote .mark{ font-size:64px; color:rgba(141,43,32,.32); line-height:.6; }
+.quote .qt{
+  font-size:33px; line-height:1.95; letter-spacing:.085em; color:var(--ink);
+  text-shadow:0 1px 0 rgba(255,248,225,.5);
+}
+.quote .qt em{ font-style:normal; color:var(--accent); }
+.quote .sub{ font-size:17px; line-height:1.95; letter-spacing:.09em; color:var(--ink-2); max-width:400px; }
+.rule{ width:120px; height:1px; background:linear-gradient(to right, transparent, rgba(141,43,32,.6), transparent); }
+
+/* --- 図解ページ --- */
+.figure{ flex:1; display:flex; flex-direction:column; min-height:0; }
+.figure .fig-t{ font-size:19px; letter-spacing:.12em; color:var(--ink); margin-bottom:4px; }
+.figure .fig-s{ font-size:14px; letter-spacing:.08em; color:var(--ink-3); margin-bottom:16px; }
+.figure .fig-body{ flex:1; min-height:0; display:flex; align-items:center; justify-content:center; }
+.figure svg{ width:100%; height:100%; max-height:100%; }
+.figure .fig-n{ font-size:14.5px; line-height:1.85; color:var(--ink-2); margin-top:14px; border-top:1px solid rgba(70,48,24,.28); padding-top:11px; }
+
+/* --- 見返し・扉・奥付 --- */
+.endpaper{
+  position:absolute; inset:0;
+  background:
+    radial-gradient(80% 60% at 30% 20%, rgba(90,52,28,.55), transparent 70%),
+    repeating-conic-gradient(from 12deg at 42% 58%, #6b4326 0deg 6deg, #58351e 6deg 11deg, #7a5030 11deg 15deg),
+    #5d3a20;
+  filter:contrast(1.05) saturate(.85);
+}
+.endpaper::after{
+  content:""; position:absolute; inset:0;
+  background:radial-gradient(100% 80% at 50% 45%, transparent 30%, rgba(0,0,0,.72));
+  mix-blend-mode:multiply;
+}
+.titlepage{ flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:20px; }
+.titlepage .kicker{ font-size:16px; letter-spacing:.5em; color:var(--ink-3); }
+.titlepage .main{ font-size:50px; line-height:1.55; letter-spacing:.09em; color:var(--ink); }
+.titlepage .main em{ font-style:normal; color:var(--accent); }
+.titlepage .sub{ font-size:19px; letter-spacing:.2em; color:var(--ink-2); }
+.titlepage .orn{ font-size:22px; color:var(--gold); letter-spacing:.6em; }
+.titlepage .meta{ font-size:14px; letter-spacing:.2em; color:var(--ink-3); margin-top:8px; }
+
+.colophon{ flex:1; display:flex; flex-direction:column; justify-content:center; gap:11px; font-size:13px; line-height:1.72; color:var(--ink-2); }
+.colophon h4{ font-size:16px; letter-spacing:.2em; color:var(--ink); font-weight:400; margin-bottom:4px; }
+.colophon .row{ display:flex; gap:9px; }
+.colophon .row b{ font-weight:400; color:var(--ink-3); min-width:44px; }
+
+/* =========================================================================
+   右上：チャンネルロゴ（ちかちか）
+   ========================================================================= */
+#chlogo{
+  position:absolute; right:42px; top:44px; z-index:40;
+  transform:perspective(760px) rotateY(-11deg) rotateX(4deg);
+  transform-origin:right center; pointer-events:none;
+}
+.logo-plate{
+  position:relative; padding:13px 22px 14px;
+  border:1px solid rgba(190,150,86,.30);
+  background:linear-gradient(150deg, rgba(20,12,7,.62), rgba(6,4,2,.48));
+  box-shadow:0 10px 30px rgba(0,0,0,.6), inset 0 0 30px rgba(0,0,0,.55);
+  backdrop-filter:blur(1.5px);
+}
+.logo-plate::before, .logo-plate::after{
+  content:""; position:absolute; width:9px; height:9px; border:1px solid rgba(190,150,86,.5);
+}
+.logo-plate::before{ left:-4px; top:-4px; border-right:0; border-bottom:0; }
+.logo-plate::after{ right:-4px; bottom:-4px; border-left:0; border-top:0; }
+
+.logo-txt{
+  position:relative; display:block;
+  font-size:34px; letter-spacing:.20em; font-weight:700; line-height:1;
+  color:#efe2c6;
+  text-shadow:
+    0 0 5px rgba(255,226,170,.85),
+    0 0 16px rgba(214,86,48,.75),
+    0 0 40px rgba(180,40,24,.55),
+    0 2px 0 rgba(0,0,0,.85);
+  animation:tubeFlicker 6.2s steps(1) infinite;
+}
+@keyframes tubeFlicker{
+  0%,100%{ opacity:1 }
+  4%{ opacity:.28 } 4.7%{ opacity:1 } 5.4%{ opacity:.44 } 6%{ opacity:1 }
+  27%{ opacity:1 } 27.6%{ opacity:.12 } 28.1%{ opacity:.92 } 28.7%{ opacity:.34 } 29.4%{ opacity:1 }
+  53%{ opacity:.66 } 53.5%{ opacity:1 }
+  71%{ opacity:1 } 71.5%{ opacity:.18 } 72.2%{ opacity:1 } 73%{ opacity:.5 } 73.5%{ opacity:1 }
+  91%{ opacity:.24 } 91.8%{ opacity:1 }
+}
+/* グリッチ複製 */
+.logo-txt::before, .logo-txt::after{
+  content:attr(data-t); position:absolute; left:0; top:0; width:100%;
+}
+.logo-txt::before{ color:#ff5a3c; mix-blend-mode:screen; animation:gl1 7.3s steps(1) infinite; }
+.logo-txt::after { color:#49d7ff; mix-blend-mode:screen; animation:gl2 7.3s steps(1) infinite; }
+@keyframes gl1{
+  0%,100%{ transform:translate(0,0); opacity:0 }
+  31%{ transform:translate(-3px,1px); opacity:.65 } 31.7%{ opacity:0 }
+  62%{ transform:translate(2px,-2px); opacity:.5 }  62.6%{ opacity:0 }
+}
+@keyframes gl2{
+  0%,100%{ transform:translate(0,0); opacity:0 }
+  31.2%{ transform:translate(3px,-1px); opacity:.55 } 31.9%{ opacity:0 }
+  62.2%{ transform:translate(-2px,2px); opacity:.42 } 62.8%{ opacity:0 }
+}
+.logo-sub{
+  display:block; margin-top:7px; font-size:11.5px; letter-spacing:.44em; color:rgba(206,178,128,.72);
+  animation:tubeFlicker 6.2s steps(1) infinite; animation-delay:.2s;
+}
+.logo-glow{
+  position:absolute; inset:-38px -30px; pointer-events:none; z-index:-1;
+  background:radial-gradient(60% 60% at 50% 46%, rgba(196,58,32,.30), transparent 72%);
+  filter:blur(12px); animation:tubeFlicker 6.2s steps(1) infinite;
+}
+
+/* =========================================================================
+   右下：ワイプ枠
+   ========================================================================= */
+#wipe{
+  position:absolute; right:var(--wipe-r); bottom:var(--wipe-b); z-index:45;
+  width:var(--wipe-w); height:var(--wipe-h);
+  transform:perspective(1000px) rotateY(-8deg) rotateX(3.2deg);
+  transform-origin:right bottom;
+  filter:drop-shadow(0 26px 34px rgba(0,0,0,.85));
+}
+/* 枠は「輪」だけを描画し、中身は本当に抜く（編集ソフトで合成できるように） */
+.wipe-frame{
+  position:absolute; inset:0; padding:15px; pointer-events:none;
+  border-radius:5px;
+  background:
+    linear-gradient(150deg,#6a5330 0%, #3a2c18 22%, #8a6d3e 48%, #2e2213 72%, #5c4728 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(226,196,132,.42),
+    inset 0 0 22px rgba(0,0,0,.75),
+    0 0 0 1px rgba(0,0,0,.7);
+  -webkit-mask-image:linear-gradient(#000,#000), linear-gradient(#000,#000);
+  -webkit-mask-clip:content-box, border-box;
+  -webkit-mask-composite:xor;
+          mask-image:linear-gradient(#000,#000), linear-gradient(#000,#000);
+          mask-clip:content-box, border-box;
+          mask-composite:exclude;
+}
+.wipe-frame::before{
+  content:""; position:absolute; inset:7px; border:1px solid rgba(226,196,132,.26); border-radius:3px;
+}
+.wipe-inner{
+  position:absolute; inset:15px; overflow:hidden; border-radius:2px;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.85), inset 0 0 34px rgba(0,0,0,.7);
+  background:transparent;
+}
+#wipe[data-mode="green"] .wipe-inner,
+#wipe[data-mode="magenta"] .wipe-inner{ box-shadow:none; }
+#wipe[data-mode="black"] .wipe-inner{ background:#05060a; }
+#wipe[data-mode="green"] .wipe-inner{ background:#00b140; }
+#wipe[data-mode="magenta"] .wipe-inner{ background:#ff00c8; }
+#wipe video{ width:100%; height:100%; object-fit:cover; display:block; transform:scaleX(-1); }
+#wipe:not([data-mode="cam"]) video{ display:none; }
+
+.wipe-hint{
+  position:absolute; inset:0; display:grid; place-items:center; text-align:center;
+  font-size:12.5px; letter-spacing:.26em; color:rgba(224,206,168,.5);
+  line-height:2.1; pointer-events:none;
+}
+#wipe[data-mode="cam"] .wipe-hint{ display:none; }
+.wipe-hint span{ display:block; font-size:10px; letter-spacing:.2em; color:rgba(224,206,168,.32); }
+
+/* ガラスの反射・埃 */
+.wipe-glass{
+  position:absolute; inset:0; pointer-events:none; border-radius:2px; overflow:hidden;
+  background:linear-gradient(122deg, rgba(255,244,214,.14) 0%, transparent 34%, transparent 62%, rgba(255,244,214,.055) 100%);
+  mix-blend-mode:screen;
+}
+.wipe-glass::after{
+  content:""; position:absolute; inset:0; opacity:.20; mix-blend-mode:screen;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='w'><feTurbulence type='fractalNoise' baseFrequency='.5' numOctaves='3'/><feColorMatrix type='saturate' values='0'/></filter><rect width='160' height='160' filter='url(%23w)'/></svg>");
+}
+/* クロマキー時は反射を消す（キーが抜けなくなるため） */
+#wipe[data-mode="green"] .wipe-glass,
+#wipe[data-mode="magenta"] .wipe-glass{ display:none; }
+/* 四隅のビス */
+.rivet{ position:absolute; width:9px; height:9px; border-radius:50%;
+  background:radial-gradient(circle at 32% 30%, #e6cf9d, #7a6034 55%, #2a2013);
+  box-shadow:0 1px 2px rgba(0,0,0,.85), inset 0 0 2px rgba(0,0,0,.6); }
+.rivet.a{ left:5px; top:5px } .rivet.b{ right:5px; top:5px }
+.rivet.c{ left:5px; bottom:5px } .rivet.d{ right:5px; bottom:5px }
+
+/* ネームプレート */
+.nameplate{
+  position:absolute; left:50%; bottom:-19px; transform:translateX(-50%);
+  padding:4px 20px 5px; white-space:nowrap;
+  font-size:13px; letter-spacing:.3em; color:#e9d7ad;
+  background:linear-gradient(160deg,#5b4526,#2c2013);
+  border:1px solid rgba(226,196,132,.4); border-radius:2px;
+  box-shadow:0 6px 14px rgba(0,0,0,.7), inset 0 0 12px rgba(0,0,0,.6);
+  text-shadow:0 1px 0 rgba(0,0,0,.8);
+}
+.nameplate[contenteditable="true"]:focus{ outline:1px dashed rgba(226,196,132,.8); }
+
+/* =========================================================================
+   進行バー・UI
+   ========================================================================= */
+#progwrap{ position:absolute; left:0; right:0; bottom:0; height:5px; z-index:50; background:rgba(0,0,0,.55); }
+#prog{ height:100%; width:0%; background:linear-gradient(to right, rgba(141,43,32,.9), rgba(211,120,58,.95)); box-shadow:0 0 12px rgba(211,120,58,.6); transition:width .35s linear; }
+#ticks{ position:absolute; inset:0; }
+#ticks i{ position:absolute; top:0; width:1px; height:100%; background:rgba(226,196,132,.32); }
+
+#hud{
+  position:absolute; left:38px; bottom:26px; z-index:55; display:flex; align-items:center; gap:10px;
+  transition:opacity .45s ease; font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+#hud button, #hud .chip{
+  font:500 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif; letter-spacing:.08em;
+  color:#dfd0ac; background:rgba(14,10,6,.72); border:1px solid rgba(190,150,86,.32);
+  padding:8px 12px; border-radius:3px; cursor:pointer; user-select:none;
+  transition:background .18s, border-color .18s, color .18s;
+}
+#hud button:hover{ background:rgba(60,40,18,.9); border-color:rgba(226,196,132,.66); color:#fff2d6; }
+#hud .chip{ cursor:default; color:rgba(214,190,146,.8); }
+#hud button.on{ border-color:rgba(211,120,58,.85); color:#ffd9b4; }
+
+#hint{
+  position:absolute; right:42px; bottom:calc(var(--wipe-b) + var(--wipe-h) + 30px); z-index:44;
+  width:var(--wipe-w);
+  font:400 11px/1.85 system-ui,-apple-system,"Segoe UI",sans-serif; letter-spacing:.1em;
+  color:rgba(214,190,146,.38); text-align:right; transition:opacity .45s ease; pointer-events:none;
+}
+
+/* 目次 */
+#toc{
+  position:absolute; left:38px; top:50%; transform:translateY(-50%) translateX(-24px); z-index:60;
+  width:330px; max-height:74%; overflow:auto; padding:20px 18px;
+  background:linear-gradient(160deg, rgba(18,12,7,.95), rgba(8,5,3,.93));
+  border:1px solid rgba(190,150,86,.28); border-radius:3px;
+  box-shadow:0 28px 60px rgba(0,0,0,.8);
+  opacity:0; pointer-events:none; transition:opacity .3s ease, transform .3s ease;
+}
+#toc.show{ opacity:1; pointer-events:auto; transform:translateY(-50%) translateX(0); }
+#toc h5{ font:400 12px/1 system-ui,sans-serif; letter-spacing:.36em; color:rgba(214,190,146,.7); margin-bottom:14px; }
+#toc a{
+  display:flex; gap:10px; align-items:baseline; padding:7px 8px; border-radius:2px; cursor:pointer;
+  font-size:14px; letter-spacing:.05em; color:rgba(226,212,182,.82); text-decoration:none;
+}
+#toc a:hover{ background:rgba(141,43,32,.28); color:#ffe8c8; }
+#toc a.cur{ background:rgba(141,43,32,.42); color:#ffdcb4; }
+#toc a i{ font-style:normal; font-size:11px; color:rgba(214,190,146,.5); min-width:34px; letter-spacing:.1em; }
+
+.clean #hud, .clean #hint, .clean #progwrap, .clean #toc{ opacity:0 !important; pointer-events:none !important; }
+.idle #hud, .idle #hint{ opacity:0; }
+
+/* 開始オーバーレイ */
+#gate{
+  position:absolute; inset:0; z-index:90; display:grid; place-items:center; text-align:center;
+  background:radial-gradient(70% 60% at 50% 45%, rgba(14,9,5,.86), rgba(0,0,0,.97));
+  transition:opacity .8s ease; cursor:pointer;
+}
+#gate.hide{ opacity:0; pointer-events:none; }
+#gate .g-in{ max-width:760px; }
+#gate .g-t{ font-size:44px; letter-spacing:.14em; color:#e6d6b2; text-shadow:0 0 24px rgba(196,58,32,.5); margin-bottom:10px; }
+#gate .g-s{ font-size:16px; letter-spacing:.3em; color:rgba(206,178,128,.62); margin-bottom:34px; }
+#gate .g-b{
+  display:inline-block; padding:15px 46px; font-size:17px; letter-spacing:.34em; color:#f0e0bd;
+  border:1px solid rgba(190,150,86,.5); background:rgba(30,18,10,.6); border-radius:3px;
+  animation:gatePulse 2.6s ease-in-out infinite;
+}
+@keyframes gatePulse{ 0%,100%{ box-shadow:0 0 0 rgba(196,58,32,0) } 50%{ box-shadow:0 0 34px rgba(196,58,32,.42) } }
+#gate .g-k{
+  margin-top:30px; font:400 12px/2.1 system-ui,-apple-system,sans-serif; letter-spacing:.13em;
+  color:rgba(206,178,128,.42);
+}
+</style>
+</head>
+
+<body>
+<div id="viewport">
+  <div id="stage">
+
+    <!-- 背景 -->
+    <div class="bg bg-photo"></div>
+    <div class="bg bg-etch"></div>
+    <div class="shaft s1"></div><div class="shaft s2"></div><div class="shaft s3"></div>
+    <canvas id="dust" width="1920" height="1080"></canvas>
+
+    <!-- 本 -->
+    <div id="book3d">
+      <div id="book">
+        <div class="board"></div>
+        <div class="edge edge-l"></div>
+        <div class="edge edge-r"></div>
+
+        <div class="page page-static page-l" id="pgL"></div>
+        <div class="page page-static page-r" id="pgR"></div>
+
+        <div class="cast cast-l" id="castL"></div>
+        <div class="cast cast-r" id="castR"></div>
+
+        <div class="leaf leaf-fwd" id="leafF">
+          <div class="leaf-face face-front face-right" id="lfFront"></div>
+          <div class="leaf-face face-back  face-left"  id="lfBack"></div>
+        </div>
+        <div class="leaf leaf-bwd" id="leafB">
+          <div class="leaf-face face-front face-left"  id="lbFront"></div>
+          <div class="leaf-face face-back  face-right" id="lbBack"></div>
+        </div>
+
+        <div class="spine"></div>
+      </div>
+    </div>
+
+    <!-- 効果レイヤ -->
+    <div class="vignette"></div>
+    <div class="grain"></div>
+    <div class="flickerlayer"></div>
+
+    <!-- 右上ロゴ -->
+    <div id="chlogo">
+      <div class="logo-glow"></div>
+      <div class="logo-plate">
+        <span class="logo-txt" data-t="ワールドミステリーch">ワールドミステリーch</span>
+        <span class="logo-sub">WORLD MYSTERY CHANNEL</span>
+      </div>
+    </div>
+
+    <!-- 右下ワイプ -->
+    <div id="wipe" data-mode="clear">
+      <div class="wipe-inner">
+        <video id="camv" autoplay muted playsinline></video>
+        <div class="wipe-hint">ワイプ枠<span>W キーで 透明／黒／グリーン／マゼンタ／カメラ</span></div>
+        <div class="wipe-glass"></div>
+      </div>
+      <div class="wipe-frame"></div>
+      <div class="rivet a"></div><div class="rivet b"></div>
+      <div class="rivet c"></div><div class="rivet d"></div>
+      <div class="nameplate" contenteditable="true" spellcheck="false">案内人</div>
+    </div>
+
+    <!-- 目次 -->
+    <div id="toc"><h5>目次 / INDEX</h5><div id="toclist"></div></div>
+
+    <!-- HUD -->
+    <div id="hud">
+      <button id="bPlay" title="再生／一時停止 (P)">▶ 自動再生</button>
+      <button id="bPrev" title="前へ (←)">◀</button>
+      <button id="bNext" title="次へ (→ / Space)">▶</button>
+      <button id="bToc"  title="目次 (I)">目次</button>
+      <button id="bWipe" title="ワイプ切替 (W)">ワイプ:透明</button>
+      <button id="bClean" title="UI非表示 (C)">UI非表示</button>
+      <button id="bFull" title="全画面 (F)">全画面</button>
+      <span class="chip" id="cSpeed">×1.0</span>
+      <span class="chip" id="cPos">0 / 0</span>
+      <span class="chip" id="cTime">00:00</span>
+    </div>
+
+    <div id="hint">
+      Space / → めくる　　← 戻る　　P 自動再生　　C UI非表示　　F 全画面
+    </div>
+
+    <!-- 進行バー -->
+    <div id="progwrap"><div id="ticks"></div><div id="prog"></div></div>
+
+    <!-- 開始 -->
+    <div id="gate">
+      <div class="g-in">
+        <div class="g-t">「夢の中で死ぬと現実でも死ぬ」説</div>
+        <div class="g-s">ワールドミステリーch</div>
+        <div class="g-b">クリックして本を開く</div>
+        <div class="g-k">
+          音（ページめくり＝雫の音）を鳴らすためにクリックが必要です<br>
+          Space/→ めくる　← 戻る　P 自動再生　W ワイプ切替　C UI非表示　F 全画面　[ ] 速度
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   1. 台本データ（OP 0:00-0:40 は除外）
+   ========================================================================= */
+
+const IMG = {
+  ch01:{f:"assets/img/ch01.jpg", t:"The Fall of Lucifer（ルシファーの墜落）", a:"Gustave Doré", y:"1866"},
+  ch02:{f:"assets/img/ch02.png", t:"大脳半球・内側面（Gray's Anatomy 図728）", a:"Henry Vandyke Carter / Mysid", y:"1858", fit:"contain"},
+  ch03:{f:"assets/img/ch03.jpg", t:"The Soul Hovering over the Body（肉体を離れる魂）", a:"W. Blake / L. Schiavonetti", y:"1813"},
+  ch04:{f:"assets/img/ch04.jpg", t:"アケローン川を渡る亡者たち（神曲・地獄篇）", a:"Gustave Doré", y:"1861"},
+  ch05:{f:"assets/img/ch05.jpg", t:"The Deluge（大洪水）", a:"Gustave Doré", y:"1866"},
+  ch06:{f:"assets/img/ch06.jpg", t:"The Nightmare（夢魔）", a:"Henry Fuseli", y:"1781"},
+  ch07:{f:"assets/img/ch07.jpg", t:"マニラ近郊の街路（実写・ニッパ椰子の家）", a:"米国議会図書館 蔵", y:"1899"},
+  ch08:{f:"assets/img/ch08.png", t:"心臓・前面（Gray's Anatomy 図497）", a:"Henry Vandyke Carter", y:"1858", fit:"contain"},
+  ch09:{f:"assets/img/ch09.jpg", t:"理性の眠りは怪物を生む（気まぐれ 第43番）", a:"Francisco Goya", y:"1797-98"},
+  ch10:{f:"assets/img/ch10.jpg", t:"Jacob's Ladder（ヤコブの梯子）", a:"William Blake", y:"1805"},
+  ch11:{f:"assets/img/ch11.jpg", t:"The Round Tower（幻想の牢獄 第3図）", a:"Giovanni Battista Piranesi", y:"1749頃"},
+  ch12:{f:"assets/img/ch12.jpg", t:"Ophelia（オフィーリア）", a:"John Everett Millais", y:"1851-52"}
+};
+
+/* 左ページ指定のショートハンド */
+const P  = (note)          => ({type:"plate", note});
+const X  = (pos,sc,note)   => ({type:"detail", pos, sc, note});
+const Q  = (qt,sub)        => ({type:"quote", qt, sub});
+const F  = (fig,t,s,n)     => ({type:"figure", fig, t, s, n});
+
+const CHAPTERS = [
+{
+  n:1, title:"誰も確認できない奇妙な説", img:"ch01", sec:55, time:"0:40 - 1:35",
+  pages:[
+   { left:P("落下する夢は、もっとも多く語られる〈死の夢〉のひとつ。だが誰も、着地の先を見たことがない。"),
+     lines:[
+      {c:"q", t:"「夢の中で死ぬと現実でも死ぬ」"},
+      "この説は、昔から映画、漫画、小説、ネットの怪談などで何度も使われてきた。",
+      "夢の中で高所から落ちる。",
+      "刃物で刺される。",
+      "銃で撃たれる。",
+      "怪物に食べられる。",
+      "しかし、死ぬ瞬間が来る前に目が覚める。",
+      "実際に、こうした経験をした人は多いと思う。"
+   ]},
+   { left:Q("脳は自分が<em>死んだあとの世界</em>を想像できない",
+            "――だから死ぬ直前に目が覚める。そう説明されてきた。"),
+     lines:[
+      "そのため、",
+      {c:"q", t:"「脳は自分が死んだあとの世界を想像できない」"},
+      {c:"q", t:"「夢の中で死を認識すると、脳も自分が死んだと思い込む」"},
+      {c:"q", t:"「脳が身体の機能を停止させてしまう」"},
+      "そんな説明まで語られるようになった。",
+      "だが、この説には最初から大きな問題がある。"
+   ]},
+   { left:Q("証明もできない。<em>否定もできない。</em>",
+            "この確認できない空白が、都市伝説をこれほど長く生かしている。"),
+     lines:[
+      "夢の中で死んで、本当に現実でも亡くなった人がいたとしても、その人は夢の内容を誰にも話せない。",
+      "つまり、最後にどんな夢を見ていたのか、確認する方法がない。",
+      "証明することも難しい。",
+      "完全に否定することも難しい。",
+      "この確認できない部分こそが、都市伝説を長く生き残らせている。"
+   ]}
+  ]
+},
+{
+  n:2, title:"なぜ死ぬ直前に目が覚めるのか", img:"ch02", sec:70, time:"1:35 - 2:45",
+  pages:[
+   { left:P("恐怖や情動に関わる扁桃体は、レム睡眠中もはっきりと活動している。"),
+     lines:[
+      "では、なぜ高所から落ちる夢では、地面に激突する直前に目が覚めることが多いのか。",
+      "一般的に、鮮明で物語性の強い夢や悪夢は、レム睡眠と呼ばれる睡眠状態で起きやすい。",
+      "レム睡眠中、身体は眠っている。",
+      "しかし脳の一部は、起きているときに近いほど活動している。",
+      "特に、恐怖や感情に関係する扁桃体（へんとうたい）などが活発になることが知られている。"
+   ]},
+   { left:F("rem","一晩の睡眠段階（模式図）","夜が明けるほど、レム睡眠は長くなる",
+            "鮮明な夢・悪夢はレム睡眠で起きやすい。身体は眠り、脳は起きている——その落差が夢の恐怖を本物にする。"),
+     lines:[
+      "そのため夢の中では、現実ではあり得ない状況でも、本気で恐怖を感じる。",
+      "高層ビルから落ちている。",
+      "何者かに追われている。",
+      "もうすぐ殺される。",
+      "夢の中では、それが作り物だと気づけない。"
+   ]},
+   { left:Q("心拍が変わる。<br>呼吸が乱れる。<br><em>汗をかく。</em>",
+            "夢の中の恐怖に、現実の身体が追いついてくる。"),
+     lines:[
+      "恐怖が限界まで強くなると、脳と自律神経（じりつしんけい）が反応する。",
+      "心拍数が変化する。",
+      "呼吸が乱れる。",
+      "汗をかく。",
+      "身体が覚醒状態へ近づく。"
+   ]},
+   { left:Q("死ぬほどの恐怖で、<em>身体が覚醒する</em>",
+            "――脳が壊れるから目覚めるのではない。順番はおそらく、こちらだ。"),
+     lines:[
+      "そして、死ぬ直前に目が覚める。",
+      "悪夢を見ている最中には、自律神経の活動が実際に高まることも睡眠計測で確認されている。",
+      "つまり、",
+      {c:"q", t:"「死を経験すると脳が壊れるから目覚める」"},
+      "というより、",
+      {c:"q", t:"「死ぬほどの恐怖で身体が覚醒する」"},
+      "と考えた方が筋が通る。"
+   ]}
+  ]
+},
+{
+  n:3, title:"夢の中で死ぬことはできる", img:"ch03", sec:75, time:"2:45 - 4:00",
+  pages:[
+   { left:P("死んだ自分の身体を、上から眺めていた——そう語る夢の記録は、決して少なくない。"),
+     lines:[
+      "ところが、ここで都市伝説の前提が崩れる。",
+      "夢の中で死を迎えても、目覚めなかったという人は存在する。",
+      "夢の中で撃たれたあと、自分の遺体を上から眺めていた。",
+      "事故で死亡したあと、幽霊になって家族のもとへ向かった。",
+      "身体が消滅したあと、暗闇の中を漂い続けた。",
+      "死んだ直後、突然別人の視点へ切り替わった。",
+      "死亡したはずなのに、次の場面では普通に生き返っていた。"
+   ]},
+   { left:Q("脳は死後の夢を作れない<br>――その説明は<br><em>正しくない</em>",
+            "夢には現実と同じ物理法則も、時間の流れもない。"),
+     lines:[
+      "もちろん、これらは本人が語る夢の体験であり、本当に死を経験したわけではない。",
+      "だが少なくとも、",
+      {c:"q", t:"「人間の脳は、自分が死亡したあとの夢を作れない」"},
+      "という説明は正しくない。",
+      "夢には、現実と同じ物理法則も、時間の流れもない。",
+      "自分が死んだあと、自分の遺体を見ることもできる。",
+      "一瞬で数十年が経過することもある。",
+      "自分が自分ではなくなることさえある。"
+   ]},
+   { left:X("50% 22%", 1.7, "脳は死後を再現しているのではない。ただ、次の場面へ切り替えているだけだ。"),
+     lines:[
+      "脳が死後の状態を正確に再現しているのではない。",
+      "映画の場面転換のように、別の物語を作っているだけだ。",
+      "だから夢の中で死亡しても、そのまま夢が続くことはあり得る。",
+      "この時点では、夢の中で死ぬこと自体が、人間を現実で死亡させるとは考えにくい。",
+      "しかし、問題はここからだ。",
+      {c:"q", t:"夢と現実の身体は、完全に切り離されているわけではない。"}
+   ]}
+  ]
+},
+{
+  n:4, title:"夢の恐怖は現実の身体にも届く", img:"ch04", sec:80, time:"4:00 - 5:20",
+  pages:[
+   { left:P("逃げても逃げても、距離は縮まる。足は動かず、声も出ない。"),
+     lines:[
+      "例えば夢の中で、正体不明の何かに追われているとする。",
+      "逃げても逃げても距離が縮まる。",
+      "足が動かない。",
+      "声も出ない。",
+      "怪物の手が、首のすぐ後ろまで迫ってくる。"
+   ]},
+   { left:F("auto","悪夢のときの身体（模式図）","心拍・呼吸・発汗は、夢の中の恐怖に反応する",
+            "夢の中の出来事でも、反応しているのは現実の脳と身体だ。悪夢の最中に自律神経の活動が高まることは睡眠計測でも確認されている。"),
+     lines:[
+      "これは夢の中の出来事だ。",
+      "しかし、その恐怖に反応しているのは現実の脳だ。",
+      "心拍や呼吸を調整しているのも、現実の身体だ。",
+      "悪夢を見たあと、動悸、発汗、息苦しさ、強い不安を感じることがある。",
+      "目が覚めた瞬間、身体が跳ねることもある。",
+      "つまり、夢の中で受けた精神的な刺激は、現実の身体に影響を与える。"
+   ]},
+   { left:Q("夢によって身体が<em>危険な状態</em>になることはある",
+            "ただし――悪夢だけで健康な人の心臓が止まるという明確な証拠は、ない。"),
+     lines:[
+      "ここだけを切り取れば、",
+      {c:"q", t:"「夢によって身体が危険な状態になることはある」"},
+      "とも言える。",
+      "それなら、心臓が弱い人が極端に恐ろしい夢を見た場合、悪夢が引き金となって死亡することもあるのではないか。",
+      "理論上、その可能性を完全なゼロと断言するのは難しい。",
+      "ただし、悪夢を見たという理由だけで、健康な人の心臓が突然停止するという明確な証拠はない。",
+      "そして実際には、もっと逆の現象が起きている可能性がある。"
+   ]}
+  ]
+},
+{
+  n:5, title:"身体の異常が夢へ入り込む", img:"ch05", sec:85, time:"5:20 - 6:45",
+  pages:[
+   { left:F("stim","現実の刺激は、夢の物語に化ける","睡眠中の感覚刺激が夢へ影響することは複数の研究で確認されている",
+            "音・匂い・触覚、そして痛みさえも、夢の筋書きへ取り込まれることがある。"),
+     lines:[
+      "寝ている人の身体に音、匂い、触覚などの刺激を与えると、その刺激が夢の内容へ取り込まれることがある。",
+      "外で鳴っている目覚まし時計が、夢の中では火災報知器になる。",
+      "身体に水滴が当たると、夢の中で雨が降る。",
+      "腕が圧迫されていると、誰かに腕をつかまれる。",
+      "睡眠中の感覚刺激が夢へ影響することは、複数の研究をまとめた分析でも確認されている。",
+      "痛みさえ、夢の内容に組み込まれる場合がある。"
+   ]},
+   { left:P("呼吸が苦しい——その理由を、脳は夢の中で説明しようとする。溺れる。首を絞められる。押しつぶされる。"),
+     lines:[
+      "だとすれば、睡眠中に身体の内部で起きている異常も、夢へ入ってくる可能性がある。",
+      "例えば、現実の身体で呼吸が苦しくなる。",
+      "脳は、その理由を夢の中で説明しようとする。",
+      "そして、",
+      "誰かに首を絞められる夢。",
+      "水の中で溺れる夢。",
+      "胸の上に怪物が乗っている夢。",
+      "狭い場所に閉じ込められる夢。",
+      "こうした物語へ変換する可能性がある。"
+   ]},
+   { left:Q("因果関係が、<em>逆</em>なのだ",
+            "怖い夢を見たから身体に異常が起きたのではない。身体に異常が起きたから、脳がそれを怖い夢として表現した。"),
+     lines:[
+      "胸に痛みや圧迫感が起きれば、夢の中では刃物で刺されたり、銃で撃たれたりするかもしれない。",
+      {c:"q", t:"つまり、因果関係が逆なのだ。"},
+      "怖い夢を見たから身体に異常が起きたのではない。",
+      "身体に異常が起きたから、脳がそれを怖い夢として表現した。",
+      "もしこれが睡眠中の死にも起きるなら、",
+      {c:"q", t:"「夢が人間を殺した」のではなく、"},
+      {c:"q", t:"「死に近づいている身体の感覚が、最後の夢へ入り込んだ」"},
+      "ということになる。"
+   ]}
+  ]
+},
+{
+  n:6, title:"金縛りと胸の上の怪物", img:"ch06", sec:75, time:"6:45 - 8:00",
+  pages:[
+   { left:P("フュースリ『夢魔』。胸の上に乗る小鬼は、世界各地の金縛り体験と驚くほど一致している。"),
+     lines:[
+      "この現象とよく似ているのが、金縛りだ。",
+      "金縛りでは、意識が戻っているのに身体が動かない。",
+      "声を出そうとしても出せない。",
+      "胸を圧迫されているように感じる。",
+      "そして、人影、怪物、幽霊のようなものを見る場合がある。"
+   ]},
+   { left:X("46% 30%", 2.1, "「夜中に怪物が胸の上へ乗ってくる」——この伝承は、大陸を越えて繰り返し現れる。"),
+     lines:[
+      "世界各地には、",
+      {c:"q", t:"「夜中に怪物が胸の上へ乗ってくる」"},
+      {c:"q", t:"「悪霊に身体を押さえつけられる」"},
+      "という伝承が残っている。",
+      "しかし睡眠研究では、こうした体験はレム睡眠と覚醒の境界で起きる睡眠麻痺と、幻覚的な体験によって説明できると考えられている。"
+   ]},
+   { left:Q("脳は、その原因を<em>探してしまう</em>",
+            "動かない身体。苦しい呼吸。強烈な恐怖。説明のつかない感覚に、脳は姿を与える。"),
+     lines:[
+      "身体が動かない。",
+      "呼吸が苦しい。",
+      "強烈な恐怖を感じる。",
+      "脳は、その原因を探す。",
+      "その結果、",
+      {c:"q", t:"「誰かが自分の胸に乗っている」"},
+      "という怪物を作り出してしまう。"
+   ]},
+   { left:Q("あれは本当に、<em>金縛りだけ</em>だったのか",
+            "健康そうに見えた人が、睡眠中に突然死亡する——その現象は、実際に存在する。"),
+     lines:[
+      "だが、ここで奇妙な疑問が残る。",
+      "昔の人々が語った、",
+      {c:"q", t:"「眠っている人間を襲い、そのまま殺す怪物」"},
+      "あれは本当に、金縛りだけだったのだろうか。",
+      "世界には実際に、健康そうに見えた人が睡眠中に突然死亡する現象が存在する。"
+   ]}
+  ]
+},
+{
+  n:7, title:"フィリピンの「バングンゴット」", img:"ch07", sec:95, time:"8:00 - 9:35",
+  pages:[
+   { left:P("1899年、マニラ近郊の街路。この時代、夜のうめき声のあとに人が戻らないことは、珍しくなかった。"),
+     lines:[
+      "フィリピンには、「バングンゴット」と呼ばれてきた現象がある。",
+      "一般的には悪夢を意味する言葉としても使われるが、医学的な文脈では、睡眠中に突然死亡する原因不明の症例と結びつけられてきた。",
+      "夜、普通に眠りについた人が、苦しそうな声を上げる。",
+      "うめき声や叫び声を聞いた家族が駆けつける。",
+      "しかし本人は目を覚まさない。",
+      "そして、そのまま死亡する。"
+   ]},
+   { left:F("names","同じ現象に、別々の名前","地域ごとに呼び名は違い、指しているものは重なる",
+            "被害者の多くは、それまで重い病気があるとは思われていなかった成人男性だった。"),
+     lines:[
+      "死亡する人の多くは、それまで重い病気があるとは思われていなかった成人男性だった。",
+      "同様の現象は、タイでは「ライタイ」。",
+      "日本では「ポックリ病」。",
+      "欧米の医学文献では、突然原因不明夜間死症候群。",
+      "英語の頭文字を取り、SUNDSと呼ばれている。",
+      "フィリピンでの睡眠中の突然死については、過去の死亡記録や人口調査を使った研究も行われている。"
+   ]},
+   { left:Q("<em>悪夢によって殺された</em>",
+            "原因が分からなかった時代、人々はそう考えるしかなかった。"),
+     lines:[
+      "原因が分からなかった時代、人々はこう考えた。",
+      "恐ろしい悪夢に捕まった。",
+      "悪霊に胸を押さえつけられた。",
+      "夢の中から帰ってこられなくなった。",
+      "そして、",
+      {c:"q", t:"「悪夢によって殺された」"},
+      "という伝承が生まれた可能性がある。"
+   ]}
+  ]
+},
+{
+  n:8, title:"眠っている人間を襲う心臓の異常", img:"ch08", sec:100, time:"9:35 - 11:15",
+  pages:[
+   { left:P("構造に大きな異常がなくても、心臓を動かす電気信号が乱れることがある。"),
+     lines:[
+      "その後、この睡眠中の突然死には、心臓の電気的な異常が関係している可能性が分かってきた。",
+      "特に注目されたのが、ブルガダ症候群。",
+      "ブルガダ症候群は、心臓の構造に大きな異常がなくても、心臓を動かす電気信号に問題が起きる病気だ。",
+      "危険な不整脈が発生すると、心臓が正常に血液を送り出せなくなる。"
+   ]},
+   { left:F("ecg","正常洞調律から心室細動へ（模式図）","心臓が規則正しく収縮せず、細かく震える状態になる",
+            "ブルガダ症候群は安静時や睡眠中に危険な不整脈が起きる場合があり、東南アジアの原因不明夜間突然死との関連が研究されている。"),
+     lines:[
+      "その一つが、心室細動（しんしつさいどう）。",
+      "心臓が規則正しく収縮せず、細かく震えるような状態になる。",
+      "すぐに回復しなければ、意識を失い、突然死につながる。",
+      "ブルガダ症候群は、安静時や睡眠中に危険な不整脈が起きる場合があり、東南アジアで報告されてきた原因不明の夜間突然死との関連が研究されている。"
+   ]},
+   { left:Q("身体の異常が、<em>最後の夢へ流れ込む</em>",
+            "胸の違和感。呼吸の苦しさ。意識の混乱。その瞬間、本人が夢を見ていたなら。"),
+     lines:[
+      "ここで先ほどの夢の話とつながる。",
+      "睡眠中、心臓に異常が起きる。",
+      "血液や酸素が十分に脳へ届かなくなる。",
+      "胸の違和感、呼吸の苦しさ、意識の混乱が発生する。",
+      "その瞬間、本人が夢を見ていたなら、脳は身体の異常を夢の物語へ取り込むかもしれない。"
+   ]},
+   { left:F("chain","最後の夜に起きうる順番","身体の異常が先にあり、夢はそれを物語に変える",
+            "外から見れば〈悪夢にうなされて死んだ〉ように見える。だが、順番はこうだったかもしれない。"),
+     lines:[
+      "何者かに追われる。",
+      "胸を刺される。",
+      "巨大な怪物に押しつぶされる。",
+      "水の中へ沈んでいく。",
+      "夢の中で死を迎える。",
+      {c:"q", t:"そして現実でも、心臓が停止する。"}
+   ]},
+   { left:Q("悪夢が心臓を<br>止めたのではない。<br><em>心臓が止まりかけていた</em>",
+            "だから最後に、恐ろしい夢を見た——その可能性がある。"),
+     lines:[
+      "外から見ている家族には、",
+      {c:"q", t:"「悪夢にうなされたあと死亡した」"},
+      "ように見える。",
+      "しかし実際には、悪夢が心臓を止めたのではない。",
+      "心臓が止まりかけていたため、最後に恐ろしい夢を見た可能性がある。",
+      "ただし、死亡した本人に夢の内容を確認できない以上、これも証明はできない。"
+   ]}
+  ]
+},
+{
+  n:9, title:"それでも悪夢は無害なのか", img:"ch09", sec:80, time:"11:15 - 12:35",
+  pages:[
+   { left:P("『理性の眠りは怪物を生む』。眠りが理性を手放したとき、何が湧き出すのか。"),
+     lines:[
+      "ここまで聞くと、",
+      {c:"q", t:"「夢で死んでも問題ない」"},
+      {c:"q", t:"「悪夢なんて気にする必要はない」"},
+      "と思うかもしれない。",
+      "だが、悪夢が完全に無害というわけでもない。",
+      "悪夢を繰り返すと、睡眠の質が低下する。",
+      "目覚める回数が増える。",
+      "眠ること自体が怖くなる。",
+      "日中の集中力や精神状態にも影響する。"
+   ]},
+   { left:F("study","2025年 大規模研究のメモ","報告されたのは〈関連〉であって〈因果〉ではない",
+            "強いストレス、精神的な病気、慢性的な睡眠不足、未発見の身体の病気——これらが悪夢と死亡リスクの両方を押し上げている可能性も残る。"),
+     lines:[
+      "さらに、2025年に発表された大規模研究では、週に1回以上悪夢を見ると回答した成人は、悪夢をほとんど見ない成人より、70歳未満で死亡する割合が高かったと報告された。",
+      "研究では、18万人を超える成人のデータが調べられ、悪夢の頻度と生物学的な老化との関連も示された。",
+      "ただし、ここは誤解してはいけない。",
+      {c:"q", t:"この研究が示したのは関連性だ。"},
+      "悪夢が直接、人間の寿命を縮めたと証明したわけではない。"
+   ]},
+   { left:Q("頻繁な悪夢は、<em>警告</em>かもしれない",
+            "身体からの、あるいは精神からの。無視していい理由にはならない。"),
+     lines:[
+      "強いストレスを抱えている。",
+      "精神的な病気がある。",
+      "睡眠が慢性的に不足している。",
+      "本人が気づいていない身体の病気がある。",
+      "こうした要因が、悪夢と死亡リスクの両方を増やしている可能性も残っている。",
+      "それでも、頻繁な悪夢が身体や精神からの警告である可能性は無視できない。"
+   ]}
+  ]
+},
+{
+  n:10, title:"死ぬ夢には予知能力があるのか", img:"ch10", sec:70, time:"12:35 - 13:45",
+  pages:[
+   { left:P("ヤコブの梯子。夢が別の世界に通じているという感覚は、人類の古い確信のひとつだ。"),
+     lines:[
+      "ここで、もう一つの説がある。",
+      {c:"q", t:"「死ぬ夢は、自分の死を予知している」"},
+      "しかし現在のところ、死ぬ夢に未来を予知する能力があるという科学的な証拠はない。",
+      "死ぬ夢を見ても、ほとんどの人は翌朝、普通に目を覚ます。",
+      "問題なく生活を続ける。"
+   ]},
+   { left:F("bias","なぜ〈当たった夢〉だけが残るのか","外れた夢は忘れられ、一致した夢だけが記憶に残る",
+            "世界中で毎晩、膨大な数の夢が見られている。その一部が偶然、後の現実と一致することはあり得る。"),
+     lines:[
+      "それでも偶然、夢を見た直後に事故や病気が起きる人はいる。",
+      "世界中で毎晩、膨大な数の人が夢を見ている。",
+      "その中には、死、事故、病気に関係する夢も含まれる。",
+      "大量に起きている夢の一部が、偶然その後の現実と一致することはあり得る。",
+      "そして人間は、外れた夢を忘れ、一致した夢だけを強く記憶する。",
+      "これによって、「あの夢は警告だった」という物語が完成する。"
+   ]},
+   { left:Q("予知ではなく、<em>感じ取っていた</em>",
+            "未来の病気を当てたのではない。すでに身体で始まっていた異常を、夢として拾い上げていた。"),
+     lines:[
+      "ただし、睡眠中の身体の異常が夢へ入り込む可能性はある。",
+      "そのため正確には、",
+      "未来の病気を予知したのではなく、",
+      {c:"q", t:"すでに身体で始まっていた異常を、本人が夢として感じ取った可能性は残る。"}
+   ]}
+  ]
+},
+{
+  n:11, title:"最終検証", img:"ch11", sec:40, time:"13:45 - 14:25",
+  pages:[
+   { left:P("複数の現象が同じ夜に重なり、ひとつの伝説になった。"),
+     lines:[
+      {c:"lead", t:"ここまでの話を整理する。"},
+      "夢の中で死んでも、そのまま夢が続く人はいる。",
+      "死ぬ瞬間を経験したという人もいる。",
+      "それでも現実では生きている。",
+      "夢の中の恐怖によって、心拍、呼吸、自律神経が変化することはある。"
+   ]},
+   { left:F("verify","検証の要点","三つの事実が重なって、ひとつの説が生まれた",
+            "どれも実在する現象だ。しかし〈夢が人を殺す〉という一本の線には、まだ繋がっていない。"),
+     lines:[
+      "身体に起きた痛みや刺激が、夢の内容へ入り込むこともある。",
+      "そして現実には、睡眠中に危険な不整脈などで突然死亡する人もいる。",
+      "この複数の現象が混ざり合い、「夢の中で死ぬと、現実でも死ぬ」という説が生まれた可能性が高い。",
+      {c:"q", t:"では、最初の疑問に答える。"}
+   ]}
+  ]
+},
+{
+  n:12, title:"結論", img:"ch12", sec:45, time:"14:25 - 15:10",
+  pages:[
+   { left:P("水面に浮かび、静かに沈んでいく。そこに恐怖があったのかどうかは、誰にも分からない。"),
+     lines:[
+      "夢の中で死んだからといって、それだけで現実の人間が死亡するという証拠はない。",
+      "夢の中で死んでも、普通は目を覚ます。",
+      "夢が続く場合もある。",
+      "脳が自分の死を認識し、身体の機能を停止させるという説にも、科学的な根拠は確認されていない。",
+      {c:"q", t:"つまり「夢の中で死ぬと現実でも死ぬ」という説は、基本的には都市伝説だ。"}
+   ]},
+   { left:X("50% 58%", 1.9, "睡眠中に心臓や呼吸が危険な状態へ陥った人が、最後にどんな夢を見るのか。それを知る方法はない。"),
+     lines:[
+      {c:"lead", t:"ただし、本当に恐ろしいのはここからだ。"},
+      "悪夢は現実の身体へ反応を起こす。",
+      "そして現実の身体に起きた異常も、悪夢の中へ入り込む。",
+      "睡眠中に心臓や呼吸が危険な状態へ陥った人が、最後にどんな夢を見るのか。",
+      "それを知る方法はない。",
+      "もしかすると、その人は夢の中で何者かに追われているかもしれない。",
+      "胸を刺されているかもしれない。",
+      "暗い水の底へ沈んでいるかもしれない。"
+   ]},
+   { left:Q("順番は、<em>逆</em>だったのかもしれない",
+            "夢の中の死が現実へやって来るのではない。現実で近づいていた死が、最後の夢の中へ入り込んでいた。"),
+     lines:[
+      "そして夢の中で死を迎えた瞬間、現実の心臓も止まる。",
+      "だが、夢が現実の人間を殺したわけではない。",
+      {c:"q", t:"順番は、逆だったのかもしれない。"},
+      "夢の中の死が現実へやって来るのではない。",
+      "現実で近づいていた死が、",
+      {c:"q", t:"最後の夢の中へ入り込んでいたのかもしれない。"}
+   ]}
+  ]
+}
+];
+
+/* =========================================================================
+   2. 図解 SVG
+   ========================================================================= */
+const INK="#3a2b1c", INK2="#6d5942", RED="#8d2b20";
+
+function seeded(s){ return ()=> (s = (s*1664525+1013904223) % 4294967296) / 4294967296; }
+
+const FIGS = {
+
+/* 睡眠段階（ヒプノグラム） */
+rem(){
+  const stages=["覚醒","レム","N1","N2","N3"], y=s=>44+s*52;
+  // 一晩の推移（模式）
+  const seq=[[0,0],[0.4,2],[0.8,3],[1.4,4],[2.2,3],[2.6,1],[3.0,2],[3.4,3],[4.1,4],[4.6,3],[5.0,1],
+             [5.6,2],[6.0,3],[6.4,2],[6.8,1],[7.3,2],[7.6,1],[8,0]];
+  const X=t=>62+t*44;
+  let d="";
+  seq.forEach((p,i)=>{ const [t,s]=p;
+    if(i===0){ d+=`M${X(t)},${y(s)}`; }
+    else { d+=`L${X(t)},${y(seq[i-1][1])} L${X(t)},${y(s)}`; }
+  });
+  d+=`L${X(8)},${y(0)}`;
+  // レムの帯
+  let rem="";
+  [[2.6,3.0],[5.0,5.6],[6.8,7.3],[7.6,8.0]].forEach(([a,b])=>{
+    rem+=`<rect x="${X(a)}" y="${y(1)-13}" width="${X(b)-X(a)}" height="26" fill="${RED}" opacity=".16"/>`;
+  });
+  return `<svg viewBox="0 0 440 330" fill="none">
+   <g font-family="serif" font-size="12" fill="${INK2}">
+    ${stages.map((s,i)=>`<text x="52" y="${y(i)+4}" text-anchor="end">${s}</text>
+      <line x1="60" y1="${y(i)}" x2="416" y2="${y(i)}" stroke="${INK2}" stroke-width=".5" stroke-dasharray="2 4" opacity=".5"/>`).join("")}
+    ${rem}
+    <path d="${d}" stroke="${INK}" stroke-width="1.9" stroke-linejoin="round"/>
+    <line x1="60" y1="292" x2="416" y2="292" stroke="${INK}" stroke-width="1"/>
+    ${[0,2,4,6,8].map(t=>`<line x1="${X(t)}" y1="292" x2="${X(t)}" y2="297" stroke="${INK}" stroke-width="1"/>
+       <text x="${X(t)}" y="311" text-anchor="middle" font-size="11">${t}h</text>`).join("")}
+    <text x="${X(7.0)}" y="26" text-anchor="middle" font-size="11.5" fill="${RED}">明け方ほどレムが長い</text>
+    <path d="M${X(7.0)},32 L${X(7.0)},${y(1)-16}" stroke="${RED}" stroke-width=".8" stroke-dasharray="2 3"/>
+   </g></svg>`;
+},
+
+/* 自律神経の反応 */
+auto(){
+  const r=seeded(7);
+  let hr="M40,86", rp="M40,196";
+  for(let i=0;i<58;i++){
+    const x=40+i*6.2, calm=i<26, amp=calm?9:24+r()*10, sp=calm?1:1.9;
+    hr+=` L${x+1.6},${86} L${(x+2.4).toFixed(1)},${(86-amp*sp).toFixed(1)} L${(x+3.2).toFixed(1)},${(86+amp*.42).toFixed(1)} L${(x+4).toFixed(1)},86`;
+  }
+  for(let i=0;i<=120;i++){
+    const x=40+i*3, t=i/120, f=t<0.45?1:2.4, a=t<0.45?15:24;
+    rp+=` L${(x).toFixed(1)},${(196-Math.sin(i*0.30*f)*a).toFixed(1)}`;
+  }
+  return `<svg viewBox="0 0 440 330" fill="none" font-family="serif">
+    <text x="40" y="46" font-size="12.5" fill="${INK2}">心拍</text>
+    <line x1="40" y1="86" x2="404" y2="86" stroke="${INK2}" stroke-width=".5" opacity=".55"/>
+    <path d="${hr}" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="40" y="160" font-size="12.5" fill="${INK2}">呼吸</text>
+    <line x1="40" y1="196" x2="404" y2="196" stroke="${INK2}" stroke-width=".5" opacity=".55"/>
+    <path d="${rp}" stroke="${INK}" stroke-width="1.5"/>
+    <rect x="200" y="26" width="204" height="196" fill="${RED}" opacity=".08"/>
+    <line x1="200" y1="26" x2="200" y2="222" stroke="${RED}" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="206" y="240" font-size="12" fill="${RED}">恐怖のピーク</text>
+    <line x1="386" y1="26" x2="386" y2="222" stroke="${RED}" stroke-width="1"/>
+    <text x="382" y="240" font-size="12" fill="${RED}" text-anchor="end">覚醒</text>
+    <text x="40" y="286" font-size="12" fill="${INK2}">夢の中の出来事に、</text>
+    <text x="40" y="306" font-size="12" fill="${INK2}">反応しているのは現実の身体。</text>
+  </svg>`;
+},
+
+/* 刺激 → 夢 */
+stim(){
+  const rows=[["目覚まし時計の音","火災報知器が鳴る"],["身体に当たる水滴","夢の中で雨が降る"],
+              ["腕が圧迫されている","誰かに腕をつかまれる"],["胸の痛み・圧迫感","刃物で刺される／撃たれる"],
+              ["呼吸が苦しい","溺れる／首を絞められる"]];
+  return `<svg viewBox="0 0 440 330" fill="none" font-family="serif">
+   <text x="16" y="24" font-size="12.5" fill="${INK2}" letter-spacing="2">現実の刺激</text>
+   <text x="424" y="24" font-size="12.5" fill="${RED}" letter-spacing="2" text-anchor="end">夢の物語</text>
+   <line x1="16" y1="34" x2="196" y2="34" stroke="${INK2}" stroke-width=".7"/>
+   <line x1="244" y1="34" x2="424" y2="34" stroke="${RED}" stroke-width=".7"/>
+   ${rows.map((r,i)=>{const y=68+i*50; return `
+     <text x="16" y="${y}" font-size="13.5" fill="${INK}">${r[0]}</text>
+     <path d="M198,${y-5} L236,${y-5}" stroke="${RED}" stroke-width="1.2"/>
+     <path d="M231,${y-9} L237,${y-5} L231,${y-1}" stroke="${RED}" stroke-width="1.2" fill="none"/>
+     <text x="424" y="${y}" font-size="13.5" fill="${RED}" text-anchor="end">${r[1]}</text>
+     <line x1="16" y1="${y+13}" x2="424" y2="${y+13}" stroke="${INK2}" stroke-width=".4" stroke-dasharray="1 5" opacity=".7"/>`;}).join("")}
+   <text x="220" y="322" font-size="12" fill="${INK2}" text-anchor="middle">脳は、身体で起きたことに〈筋書き〉を与える</text>
+  </svg>`;
+},
+
+/* 各地の呼び名 */
+names(){
+  const rows=[["フィリピン","バングンゴット","Bangungot"],["タイ","ライタイ","Lai Tai"],
+              ["日本","ポックリ病","Pokkuri"],["欧米の医学文献","突然原因不明夜間死症候群","SUNDS"]];
+  return `<svg viewBox="0 0 440 330" fill="none" font-family="serif">
+   <g opacity=".16" stroke="${INK}" stroke-width="1">
+     <circle cx="220" cy="150" r="118"/><circle cx="220" cy="150" r="86"/>
+     <path d="M220,20 L220,280 M90,150 L350,150 M128,58 L312,242 M312,58 L128,242"/>
+   </g>
+   ${rows.map((r,i)=>{const y=54+i*66; return `
+     <text x="20" y="${y}" font-size="11.5" fill="${INK2}" letter-spacing="1.5">${r[0]}</text>
+     <text x="20" y="${y+25}" font-size="19" fill="${RED}">${r[1]}</text>
+     <text x="420" y="${y+25}" font-size="12" fill="${INK2}" text-anchor="end" letter-spacing="1.5">${r[2]}</text>
+     <line x1="20" y1="${y+38}" x2="420" y2="${y+38}" stroke="${INK2}" stroke-width=".5" opacity=".6"/>`;}).join("")}
+   <text x="220" y="322" font-size="12" fill="${INK2}" text-anchor="middle">呼び名は違い、指しているものは重なる</text>
+  </svg>`;
+},
+
+/* 心電図 */
+ecg(){
+  const r=seeded(29);
+  let n="M20,84";
+  for(let i=0;i<5;i++){ const x=20+i*44;
+    n+=` L${x+14},84 L${x+17},78 L${x+20},84 L${x+23},96 L${x+26},34 L${x+29},104 L${x+33},84 L${x+38},72 L${x+43},84`; }
+  let v="M20,224";
+  for(let i=0;i<=190;i++){
+    const x=20+i*2.1;
+    const a=(r()-0.5)*2*(16+Math.sin(i*0.24)*12+r()*10);
+    v+=` L${x.toFixed(1)},${(224+a).toFixed(1)}`;
+  }
+  return `<svg viewBox="0 0 440 330" fill="none" font-family="serif">
+   <g opacity=".14" stroke="${RED}">
+     ${Array.from({length:23},(_,i)=>`<line x1="${20+i*18}" y1="14" x2="${20+i*18}" y2="290" stroke-width=".6"/>`).join("")}
+     ${Array.from({length:16},(_,i)=>`<line x1="20" y1="${14+i*18}" x2="416" y2="${14+i*18}" stroke-width=".6"/>`).join("")}
+   </g>
+   <text x="20" y="34" font-size="12.5" fill="${INK2}">正常洞調律</text>
+   <path d="${n}" stroke="${INK}" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/>
+   <path d="M20,150 L416,150" stroke="${INK2}" stroke-width=".5" stroke-dasharray="3 4"/>
+   <text x="20" y="176" font-size="12.5" fill="${RED}">心室細動</text>
+   <path d="${v}" stroke="${RED}" stroke-width="1.5" stroke-linejoin="round"/>
+   <path d="M240,262 L240,286" stroke="${INK2}" stroke-width=".8"/>
+   <text x="220" y="308" font-size="12" fill="${INK2}" text-anchor="middle">規則正しい収縮が失われ、心臓が細かく震える</text>
+  </svg>`;
+},
+
+/* 2025年研究メモ */
+study(){
+  const rows=[["対象","18万人を超える成人のデータ"],["比較","週1回以上 悪夢を見る／ほとんど見ない"],
+              ["報告","70歳未満で死亡する割合が高かった"],["付随","悪夢の頻度と生物学的な老化の関連"]];
+  return `<svg viewBox="0 0 440 330" fill="none" font-family="serif">
+   <rect x="10" y="10" width="420" height="230" fill="none" stroke="${INK2}" stroke-width=".8"/>
+   <rect x="16" y="16" width="408" height="218" fill="none" stroke="${INK2}" stroke-width=".4" opacity=".6"/>
+   ${rows.map((r,i)=>{const y=58+i*50; return `
+     <text x="34" y="${y}" font-size="11.5" fill="${INK2}" letter-spacing="2.5">${r[0]}</text>
+     <text x="98" y="${y}" font-size="14" fill="${INK}">${r[1]}</text>
+     <line x1="34" y1="${y+16}" x2="406" y2="${y+16}" stroke="${INK2}" stroke-width=".4" stroke-dasharray="1 5"/>`;}).join("")}
+   <rect x="10" y="256" width="420" height="62" fill="${RED}" opacity=".08"/>
+   <rect x="10" y="256" width="3" height="62" fill="${RED}"/>
+   <text x="30" y="282" font-size="14" fill="${RED}">示されたのは〈関連〉であって〈因果〉ではない</text>
+   <text x="30" y="304" font-size="12" fill="${INK2}">悪夢が寿命を縮めたと証明されたわけではない</text>
+  </svg>`;
+},
+
+/* 確証バイアス */
+bias(){
+  const r=seeded(11); let dots="";
+  for(let i=0;i<150;i++){
+    const x=22+r()*396, y=26+r()*128, hit=i%37===0;
+    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${hit?3.4:2}" fill="${hit?RED:INK2}" opacity="${hit?".95":".38"}"/>`;
+  }
+  return `<svg viewBox="0 0 440 330" fill="none" font-family="serif">
+   <text x="22" y="18" font-size="12" fill="${INK2}">毎晩、世界中で見られる膨大な夢</text>
+   ${dots}
+   <path d="M22,168 L418,168 L268,214 L172,214 Z" fill="${INK2}" opacity=".10"/>
+   <path d="M22,168 L418,168 M418,168 L268,214 M22,168 L172,214" stroke="${INK2}" stroke-width=".8"/>
+   <text x="220" y="196" font-size="12" fill="${INK2}" text-anchor="middle">記　憶</text>
+   <path d="M172,214 L172,246 M268,214 L268,246" stroke="${INK2}" stroke-width=".8"/>
+   ${[0,1,2,3].map(i=>`<circle cx="${186+i*23}" cy="266" r="3.4" fill="${RED}"/>`).join("")}
+   <text x="220" y="296" font-size="13" fill="${RED}" text-anchor="middle">一致した夢だけが残る</text>
+   <text x="220" y="318" font-size="12" fill="${INK2}" text-anchor="middle">外れた夢は忘れられ、数に入らない</text>
+  </svg>`;
+},
+
+/* 最後の夜に起きうる順番 */
+chain(){
+  const steps=[["睡眠中","心臓の電気的な異常が起きる"],["身体","血液・酸素が脳へ届かなくなる"],
+               ["感覚","胸の違和感／呼吸の苦しさ／意識の混乱"],["脳","その感覚に〈筋書き〉を与える"],
+               ["夢","追われる・刺される・沈んでいく"],["現実","心臓が停止する"]];
+  return `<svg viewBox="0 0 440 330" fill="none" font-family="serif">
+   ${steps.map((s,i)=>{const y=30+i*52, last=i===steps.length-1; return `
+     <circle cx="34" cy="${y-5}" r="6" fill="${last?RED:"none"}" stroke="${last?RED:INK2}" stroke-width="1.2"/>
+     <text x="56" y="${y-11}" font-size="10.5" fill="${INK2}" letter-spacing="2.5">${s[0]}</text>
+     <text x="56" y="${y+9}" font-size="14" fill="${last?RED:INK}">${s[1]}</text>
+     ${!last?`<path d="M34,${y+3} L34,${y+40}" stroke="${INK2}" stroke-width=".9"/>
+              <path d="M30,${y+36} L34,${y+41} L38,${y+36}" stroke="${INK2}" stroke-width=".9"/>`:""}`;}).join("")}
+   <text x="220" y="322" font-size="12" fill="${INK2}" text-anchor="middle">夢が殺したのではなく、死が夢へ入り込んだ</text>
+  </svg>`;
+},
+
+/* 最終検証 */
+verify(){
+  const rows=[["①","夢の中で死んでも、夢は続きうる","現実では生きている"],
+              ["②","夢の恐怖で心拍・呼吸・自律神経は変化する","身体は本当に反応する"],
+              ["③","睡眠中に不整脈などで突然死亡する人がいる","実在する現象"]];
+  return `<svg viewBox="0 0 440 330" fill="none" font-family="serif">
+   ${rows.map((r,i)=>{const y=44+i*76; return `
+     <circle cx="30" cy="${y-6}" r="14" fill="none" stroke="${RED}" stroke-width="1"/>
+     <text x="30" y="${y-1}" font-size="13" fill="${RED}" text-anchor="middle">${r[0]}</text>
+     <text x="56" y="${y-9}" font-size="14.5" fill="${INK}">${r[1]}</text>
+     <text x="56" y="${y+13}" font-size="12" fill="${INK2}">${r[2]}</text>
+     ${i<2?`<path d="M30,${y+14} L30,${y+42}" stroke="${INK2}" stroke-width=".7" stroke-dasharray="2 4"/>`:""}`;}).join("")}
+   <path d="M20,268 L420,268" stroke="${INK2}" stroke-width=".8"/>
+   <text x="220" y="296" font-size="14" fill="${RED}" text-anchor="middle">三つが混ざり合い、ひとつの説になった</text>
+   <text x="220" y="318" font-size="12" fill="${INK2}" text-anchor="middle">だが〈夢が殺した〉という線は、まだ繋がっていない</text>
+  </svg>`;
+}
+};
+
+/* =========================================================================
+   3. 見開き（スプレッド）の生成
+   ========================================================================= */
+
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function textPage(ch, pi, lines, folio){
+  const body = lines.map((l,i)=>{
+    const o = (typeof l === "string") ? {t:l} : {t:l.t, c:l.c};
+    return `<p class="${o.c||""}" style="--i:${i}">${esc(o.t)}</p>`;
+  }).join("");
+  return {
+    html:`<div class="paper"></div><div class="gutter"></div><div class="foreedge"></div>
+      <div class="pad">
+        <div class="runhead"><span class="num">第${ch.n}章</span><span class="ttl">${esc(ch.title)}</span><span>${pi+1}/${ch.pages.length}</span></div>
+        <div class="body">${body}</div>
+        <div class="folio">${folio}</div>
+      </div>`,
+    anim:true
+  };
+}
+
+function leftPage(ch, spec, folio){
+  const im = IMG[ch.img];
+  let inner = "";
+
+  if(spec.type === "plate"){
+    inner = `<div class="plate">
+      <div class="plate-frame ${im.fit==="contain"?"fit-contain":""}"><img src="${im.f}" alt="" loading="eager"></div>
+      <div class="plate-cap">
+        <span class="t">${esc(im.t)}</span>
+        <span class="s">${esc(im.a)}　${esc(im.y)}</span>
+        ${spec.note?`<span class="n">${esc(spec.note)}</span>`:""}
+      </div></div>`;
+  }
+  else if(spec.type === "detail"){
+    inner = `<div class="plate">
+      <div class="plate-frame"><img src="${im.f}" alt=""
+          style="object-position:${spec.pos};transform:scale(${spec.sc});animation:none"></div>
+      <div class="plate-cap">
+        <span class="t">［部分］${esc(im.t)}</span>
+        <span class="s">${esc(im.a)}　${esc(im.y)}</span>
+        ${spec.note?`<span class="n">${esc(spec.note)}</span>`:""}
+      </div></div>`;
+  }
+  else if(spec.type === "quote"){
+    inner = `<div class="quote">
+        <div class="mark">❝</div>
+        <div class="qt">${spec.qt}</div>
+        <div class="rule"></div>
+        ${spec.sub?`<div class="sub">${esc(spec.sub)}</div>`:""}
+      </div>`;
+  }
+  else if(spec.type === "figure"){
+    inner = `<div class="figure">
+        <div class="fig-t">${esc(spec.t)}</div>
+        <div class="fig-s">${esc(spec.s)}</div>
+        <div class="fig-body">${FIGS[spec.fig]()}</div>
+        ${spec.n?`<div class="fig-n">${esc(spec.n)}</div>`:""}
+      </div>`;
+  }
+
+  return {
+    html:`<div class="paper"></div><div class="gutter"></div><div class="foreedge"></div>
+      <div class="pad">
+        <div class="runhead"><span class="ttl">${esc(ch.title)}</span><span class="num">${esc(ch.time)}</span></div>
+        ${inner}
+        <div class="folio">${folio}</div>
+      </div>`,
+    anim:false
+  };
+}
+
+/* --- 表紙・奥付 --- */
+function coverSpread(){
+  return {
+    id:"cover", ch:0, dur:7,
+    left:{ html:`<div class="endpaper"></div>`, anim:false },
+    right:{ anim:false, html:`<div class="paper"></div><div class="gutter"></div><div class="foreedge"></div>
+      <div class="pad"><div class="titlepage">
+        <div class="kicker">ワールドミステリーch</div>
+        <div class="orn">✦ ❖ ✦</div>
+        <div class="main">「夢の中で死ぬと<br><em>現実でも死ぬ</em>」説</div>
+        <div class="rule" style="width:180px"></div>
+        <div class="sub">検 証 記 録</div>
+        <div class="meta">全12章 ／ 本編 0:40 -</div>
+      </div><div class="folio">序</div></div>` }
+  };
+}
+
+function endSpread(){
+  const cr = [
+    ["ch01","The Fall of Lucifer","Gustave Doré, 1866","PD"],
+    ["ch02","Gray's Anatomy Fig.728","H. V. Carter / Mysid","PD"],
+    ["ch03","The Soul Hovering over the Body","Blake / Schiavonetti, 1813","CC0"],
+    ["ch04","Doomed Souls Cross the Acheron","Gustave Doré, 1861","PD"],
+    ["ch05","The Deluge","Gustave Doré, 1866","PD"],
+    ["ch06","The Nightmare","Henry Fuseli, 1781","PD"],
+    ["ch07","Manila street scene","Library of Congress, 1899","PD"],
+    ["ch08","Gray's Anatomy Fig.497","H. V. Carter, 1858","PD"],
+    ["ch09","El sueño de la razón…","Francisco Goya, 1797-98","PD"],
+    ["ch10","Jacob's Ladder","William Blake, 1805","PD"],
+    ["ch11","Carceri d'invenzione III","G. B. Piranesi, c.1749","CC0"],
+    ["ch12","Ophelia","J. E. Millais, 1851-52","PD"],
+    ["bg","Peressaare school hall / The Drawbridge","Hannu / Piranesi","PD・CC0"]
+  ];
+  return {
+    id:"end", ch:99, dur:14,
+    left:{ anim:false, html:`<div class="paper"></div><div class="gutter"></div><div class="foreedge"></div>
+      <div class="pad"><div class="quote">
+        <div class="mark">❝</div>
+        <div class="qt">現実で近づいていた死が、<br><em>最後の夢の中へ</em><br>入り込んでいた</div>
+        <div class="rule"></div>
+        <div class="sub">――のかもしれない。</div>
+      </div><div class="folio">了</div></div>` },
+    right:{ anim:false, html:`<div class="paper"></div><div class="gutter"></div><div class="foreedge"></div>
+      <div class="pad"><div class="colophon">
+        <h4>図版出典（すべてパブリックドメイン／CC0）</h4>
+        ${cr.map(c=>`<div class="row"><b>${c[0]}</b><span>${esc(c[1])}　<i style="font-style:normal;color:var(--ink-3)">${esc(c[2])}　${c[3]}</i></span></div>`).join("")}
+        <div class="row" style="margin-top:10px"><b>出典</b><span>Wikimedia Commons</span></div>
+        <div class="row"><b>SE</b><span>ページめくり＝雫の落ちる音</span></div>
+      </div><div class="folio">奥付</div></div>` }
+  };
+}
+
+/* --- 全スプレッド構築 --- */
+const SPREADS = [];
+SPREADS.push(coverSpread());
+
+let folio = 1;
+CHAPTERS.forEach(ch=>{
+  const weights = ch.pages.map(p=>p.lines.reduce((a,l)=>a+((typeof l==="string")?l.length:l.t.length),0));
+  const total = weights.reduce((a,b)=>a+b,0);
+  ch.pages.forEach((p,pi)=>{
+    folio++;
+    const lf = folio*2, rf = folio*2+1;
+    SPREADS.push({
+      id:`c${ch.n}p${pi}`, ch:ch.n, chTitle:ch.title, pi,
+      dur: Math.max(8, ch.sec * (weights[pi]/total)),
+      left:  leftPage(ch, p.left, lf),
+      right: textPage(ch, pi, p.lines, rf)
+    });
+  });
+});
+SPREADS.push(endSpread());
+
+/* =========================================================================
+   4. ページめくりエンジン
+   ========================================================================= */
+const $ = s => document.querySelector(s);
+const pgL=$("#pgL"), pgR=$("#pgR"), castL=$("#castL"), castR=$("#castR");
+const leafF=$("#leafF"), leafB=$("#leafB");
+const lfFront=$("#lfFront"), lfBack=$("#lfBack"), lbFront=$("#lbFront"), lbBack=$("#lbBack");
+const edgeL=$(".edge-l"), edgeR=$(".edge-r");
+
+let idx = 0, busy = false;
+
+/* 本文をページに収める。
+   級数を大きく変えると章ごとに見た目がばらつくので、
+   まず級数を少しだけ、次に行間を、最後にもう一度級数を詰める。 */
+function fitBody(el){
+  const b = el.querySelector(".body");
+  if(!b) return;
+  const n = b.children.length;
+  b.style.setProperty("--st", Math.min(.30, 3.4/Math.max(1,n)).toFixed(3)+"s");
+  const avail = b.clientHeight;
+  if(!avail) return;
+
+  let fs = 25, lh = 1.98, gap = .56;
+  const set = ()=>{
+    b.style.setProperty("--fs", fs+"px");
+    b.style.setProperty("--lh", lh.toFixed(2));
+    b.style.setProperty("--gap", gap.toFixed(2));
+  };
+  const over = ()=> b.scrollHeight > avail;
+
+  set(); if(!over()) return;
+  while(over() && fs > 22.5){ fs -= 0.5; set(); }          /* ① 級数を少しだけ */
+  while(over() && lh > 1.70){ lh -= 0.02; set(); }          /* ② 行間を詰める   */
+  while(over() && gap > 0.34){ gap -= 0.02; set(); }        /* ③ 段間を詰める   */
+  while(over() && fs > 18){ fs -= 0.5; set(); }             /* ④ それでも駄目なら級数 */
+}
+
+function paint(el, spec){
+  el.innerHTML = spec.html;
+  el.classList.toggle("anim",  !!spec.anim);
+  el.classList.toggle("noanim", !spec.anim);
+  fitBody(el);
+  /* 再生成でアニメーションを確実に再始動 */
+  if(spec.anim) void el.offsetWidth;
+}
+
+function addShade(face){
+  if(!face.querySelector(".shade")){
+    const d=document.createElement("div"); d.className="shade"; face.appendChild(d);
+  }
+  return face.querySelector(".shade");
+}
+
+const EASE = "cubic-bezier(.50,.02,.34,1)";
+const DUR  = 1180;
+
+const flip = dir => turn(idx + dir, dir);
+
+/* ni: 行き先スプレッド / dir: めくる向き（離れた章へも一度のめくりで飛ぶ） */
+async function turn(ni, dir){
+  if(busy) return false;
+  if(ni < 0 || ni >= SPREADS.length || ni === idx) return false;
+  busy = true;
+  playDrop();
+
+  const cur = SPREADS[idx], nxt = SPREADS[ni];
+  const d = DUR / speed;
+  let leaf, front, back;
+
+  if(dir > 0){
+    paint(pgR, nxt.right);                       // 下に次の右ページを敷く
+    paint(lfFront, {...cur.right, anim:false});  // めくれる葉の表＝いまの右ページ
+    paint(lfBack,  nxt.left);                    // 裏＝次の左ページ
+    leaf=leafF; front=lfFront; back=lfBack;
+  }else{
+    paint(pgL, nxt.left);
+    paint(lbFront, {...cur.left, anim:false});
+    paint(lbBack,  {...nxt.right, anim:true});
+    leaf=leafB; front=lbFront; back=lbBack;
+  }
+
+  const sf = addShade(front), sb = addShade(back);
+  const cast = (dir>0) ? castL : castR;
+  leaf.style.visibility = "visible";
+
+  const to = dir>0 ? -180 : 180, mid = dir>0 ? -92 : 92;
+  const a = leaf.animate([
+    { transform:`translateZ(4px) rotateY(0deg)` },
+    { transform:`translateZ(30px) rotateY(${mid}deg)`, offset:.5 },
+    { transform:`translateZ(4px) rotateY(${to}deg)` }
+  ], {duration:d, easing:EASE, fill:"forwards"});
+
+  sf.animate([{opacity:0},{opacity:.66,offset:.52},{opacity:.55}], {duration:d, easing:EASE, fill:"forwards"});
+  sb.animate([{opacity:.88},{opacity:.52,offset:.52},{opacity:0}], {duration:d, easing:EASE, fill:"forwards"});
+  cast.animate([{opacity:0},{opacity:.62,offset:.5},{opacity:0}], {duration:d, easing:"ease-in-out"});
+
+  try{ await a.finished; }catch(e){}
+
+  if(dir > 0) paint(pgL, nxt.left);
+  else        paint(pgR, {...nxt.right, anim:false});
+
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+  leaf.style.visibility = "hidden";
+  leaf.getAnimations().forEach(x=>x.cancel());
+  sf.getAnimations().forEach(x=>x.cancel());
+  sb.getAnimations().forEach(x=>x.cancel());
+  sf.style.opacity = sb.style.opacity = 0;
+
+  idx = ni;
+  commit();
+  busy = false;
+  drainPending();
+  return true;
+}
+
+function commit(){
+  const t = idx/(SPREADS.length-1);
+  edgeL.style.width = (6 + 30*t) + "px";
+  edgeR.style.width = (36 - 30*t) + "px";
+  $("#prog").style.width = (t*100) + "%";
+  $("#cPos").textContent = `${idx} / ${SPREADS.length-1}`;
+  const s = SPREADS[idx];
+  document.querySelectorAll("#toclist a").forEach(a=>a.classList.toggle("cur", +a.dataset.ch === s.ch));
+  if(playing) schedule();
+  updateClock();
+}
+
+let pending = null;
+function jump(target){
+  if(target < 0 || target === idx) return;
+  if(busy){ pending = target; return; }        /* めくり中の指示は取りこぼさず予約する */
+  turn(target, target > idx ? 1 : -1);
+}
+function drainPending(){
+  if(pending === null) return;
+  const t = pending; pending = null;
+  if(t !== idx) turn(t, t > idx ? 1 : -1);
+}
+
+/* =========================================================================
+   5. 音（ページめくり＝雫）
+   ========================================================================= */
+const POOL = [];
+for(let i=0;i<5;i++){ const a=new Audio("assets/se/page-drop.mp3"); a.preload="auto"; a.volume=.82; POOL.push(a); }
+let pi=0, muted=false;
+function playDrop(){
+  if(muted) return;
+  const a = POOL[pi++ % POOL.length];
+  try{ a.currentTime = 0; a.play().catch(()=>{}); }catch(e){}
+}
+
+/* =========================================================================
+   6. 自動再生
+   ========================================================================= */
+let playing=false, timer=null, speed=1, elapsed=0, clockT=null;
+
+function schedule(){
+  clearTimeout(timer);
+  const s = SPREADS[idx];
+  timer = setTimeout(()=>{ if(playing) { if(idx < SPREADS.length-1) flip(1); else stop(); } },
+                     (s.dur*1000)/speed);
+}
+function play(){
+  playing = true; $("#bPlay").textContent = "❚❚ 一時停止"; $("#bPlay").classList.add("on");
+  schedule(); startClock();
+}
+function stop(){
+  playing = false; $("#bPlay").textContent = "▶ 自動再生"; $("#bPlay").classList.remove("on");
+  clearTimeout(timer); clearInterval(clockT); clockT=null;
+}
+function startClock(){
+  clearInterval(clockT);
+  clockT = setInterval(()=>{ elapsed += 1/speed; updateClock(); }, 1000);
+}
+function updateClock(){
+  const t = Math.floor(elapsed);
+  $("#cTime").textContent = String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+}
+function setSpeed(v){
+  speed = Math.min(2, Math.max(.5, +v.toFixed(1)));
+  $("#cSpeed").textContent = "×"+speed.toFixed(1);
+  if(playing) schedule();
+}
+
+/* =========================================================================
+   7. 埃（canvas）
+   ========================================================================= */
+(function dustInit(){
+  const c = $("#dust"), x = c.getContext("2d");
+  const W=1920, H=1080, N=250, ps=[];
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  for(let i=0;i<N;i++){
+    const near = i > N*0.82;
+    ps.push({
+      x:rnd(0,W), y:rnd(0,H),
+      r: near ? rnd(4,10) : rnd(0.5,2.6),
+      a: near ? rnd(.03,.085) : rnd(.06,.42),
+      vy: near ? rnd(-.22,-.05) : rnd(-.14,-.02),
+      vx: near ? rnd(-.30,.30) : rnd(-.13,.13),
+      ph: rnd(0,Math.PI*2), sw: rnd(.0035,.013), am: near?rnd(8,22):rnd(3,13), near
+    });
+  }
+  (function loop(){
+    x.clearRect(0,0,W,H);
+    for(const p of ps){
+      p.ph += p.sw; p.y += p.vy; p.x += p.vx + Math.sin(p.ph)*p.am*0.012;
+      if(p.y < -20){ p.y = H+20; p.x = rnd(0,W); }
+      if(p.y > H+20){ p.y = -20; p.x = rnd(0,W); }
+      if(p.x < -20) p.x = W+20; if(p.x > W+20) p.x = -20;
+      const fl = 0.72 + Math.sin(p.ph*2.1)*0.28;
+      const g = x.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
+      g.addColorStop(0, `rgba(255,242,214,${(p.a*fl).toFixed(3)})`);
+      g.addColorStop(.55,`rgba(236,214,170,${(p.a*fl*.45).toFixed(3)})`);
+      g.addColorStop(1, "rgba(210,186,140,0)");
+      x.fillStyle = g;
+      x.beginPath(); x.arc(p.x,p.y,p.r,0,6.2832); x.fill();
+    }
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* =========================================================================
+   8. UI / 入力
+   ========================================================================= */
+function fit(){
+  const s = Math.min(innerWidth/1920, innerHeight/1080);
+  $("#stage").style.transform = `scale(${s})`;
+}
+addEventListener("resize", fit); fit();
+
+/* 目次 */
+(function buildToc(){
+  const el = $("#toclist");
+  el.innerHTML = CHAPTERS.map(c=>{
+    const i = SPREADS.findIndex(s=>s.ch===c.n);
+    return `<a data-i="${i}" data-ch="${c.n}"><i>第${c.n}章</i><span>${esc(c.title)}</span></a>`;
+  }).join("");
+  el.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{ jump(+a.dataset.i); $("#toc").classList.remove("show"); }));
+})();
+
+/* マウス視差 */
+let mx=0;
+addEventListener("mousemove", e=>{
+  mx = (e.clientX/innerWidth - .5);
+  document.documentElement.style.setProperty("--tiltY", (mx*5).toFixed(2)+"deg");
+  idleKick();
+});
+
+/* ゆっくり揺れる（マウスが無いとき用のアンビエント） */
+(function sway(){
+  let t=0;
+  setInterval(()=>{
+    t+=0.016;
+    if(Math.abs(mx) < 0.02){
+      document.documentElement.style.setProperty("--tiltY", (Math.sin(t)*1.5).toFixed(2)+"deg");
+      document.documentElement.style.setProperty("--tiltX", (4.5+Math.sin(t*0.7)*0.8).toFixed(2)+"deg");
+    }
+  }, 40);
+})();
+
+/* UI 自動退避 */
+let idleT=null;
+function idleKick(){
+  document.body.classList.remove("idle");
+  clearTimeout(idleT);
+  idleT = setTimeout(()=>document.body.classList.add("idle"), 3000);
+}
+idleKick();
+
+/* ワイプ */
+const WMODES = ["clear","black","green","magenta","cam"];
+const WLABEL = {clear:"透明", black:"黒", green:"グリーン", magenta:"マゼンタ", cam:"カメラ"};
+let wm = 0;
+async function cycleWipe(){
+  wm = (wm+1) % WMODES.length;
+  const m = WMODES[wm];
+  $("#wipe").dataset.mode = m;
+  $("#bWipe").textContent = "ワイプ:" + WLABEL[m];
+  if(m === "cam"){
+    try{
+      const st = await navigator.mediaDevices.getUserMedia({video:{width:1280,height:720}, audio:false});
+      $("#camv").srcObject = st;
+    }catch(e){ $("#bWipe").textContent = "ワイプ:カメラ不可"; }
+  }else{
+    const v = $("#camv");
+    if(v.srcObject){ v.srcObject.getTracks().forEach(t=>t.stop()); v.srcObject = null; }
+  }
+}
+
+/* ボタン */
+$("#bNext").onclick = ()=>{ stop(); flip(1); };
+$("#bPrev").onclick = ()=>{ stop(); flip(-1); };
+$("#bPlay").onclick = ()=> playing ? stop() : play();
+$("#bToc").onclick  = ()=> $("#toc").classList.toggle("show");
+$("#bWipe").onclick = cycleWipe;
+$("#bClean").onclick= ()=> document.body.classList.toggle("clean");
+$("#bFull").onclick = ()=> document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+
+/* クリックでめくる（本の左右半分） */
+$("#book3d").addEventListener("click", e=>{
+  const r = $("#book3d").getBoundingClientRect();
+  stop();
+  flip(e.clientX < r.left + r.width/2 ? -1 : 1);
+});
+
+/* キー */
+addEventListener("keydown", e=>{
+  if(e.target.isContentEditable) return;
+  const k = e.key.toLowerCase();
+  if(k===" "||k==="arrowright"||k==="pagedown"||k==="enter"){ e.preventDefault(); if(!playing) flip(1); else { stop(); flip(1); } }
+  else if(k==="arrowleft"||k==="pageup"){ e.preventDefault(); stop(); flip(-1); }
+  else if(k==="p"){ playing ? stop() : play(); }
+  else if(k==="c"){ document.body.classList.toggle("clean"); }
+  else if(k==="i"){ $("#toc").classList.toggle("show"); }
+  else if(k==="w"){ cycleWipe(); }
+  else if(k==="m"){ muted = !muted; }
+  else if(k==="f"){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+  else if(k==="["){ setSpeed(speed-0.1); }
+  else if(k==="]"){ setSpeed(speed+0.1); }
+  else if(k==="home"){ jump(0); }
+  else if(k==="end"){ jump(SPREADS.length-1); }
+  idleKick();
+});
+
+/* 進行バーの章目盛り */
+(function ticks(){
+  const el=$("#ticks");
+  CHAPTERS.forEach(c=>{
+    const i = SPREADS.findIndex(s=>s.ch===c.n);
+    const b = document.createElement("i");
+    b.style.left = (i/(SPREADS.length-1)*100)+"%";
+    el.appendChild(b);
+  });
+})();
+
+/* 画像プリロード：1枚ずつデコードまで済ませ、めくり中のカクつきを防ぐ */
+(async function preload(){
+  for(const o of Object.values(IMG)){
+    const im = new Image(); im.src = o.f;
+    try{ await im.decode(); }catch(e){}
+  }
+})();
+
+/* =========================================================================
+   9. 起動
+   ========================================================================= */
+paint(pgL, SPREADS[0].left);
+paint(pgR, SPREADS[0].right);
+commit();
+setSpeed(1);
+
+$("#gate").addEventListener("click", ()=>{
+  $("#gate").classList.add("hide");
+  /* 音声アンロック */
+  POOL.forEach(a=>{ a.volume=0; a.play().then(()=>{ a.pause(); a.currentTime=0; a.volume=.82; }).catch(()=>{ a.volume=.82; }); });
+  setTimeout(()=>{ flip(1); }, 700);
+  setTimeout(()=>{ if(!playing) play(); }, 2200);
+}, {once:true});
+</script>
+</body>
+</html>
