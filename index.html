@@ -1375,7 +1375,18 @@ verify(){
    3. 見開き（スプレッド）の生成
    ========================================================================= */
 
-const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+/* ---------------------------------------------------------------------
+   伏せ字（YouTube の収益化対策）
+   MASK_CHARS に足した文字は、画面に出るところ全部が MASK_CHAR に変わる。
+   ナレーション原稿（say）は画面に出ないので、そのまま残る。
+   例）伏せ字を増やす:  const MASK_CHARS = ["死","殺"];
+       伏せ字をやめる:  const MASK_CHARS = [];
+   --------------------------------------------------------------------- */
+const MASK_CHARS = ["死"];
+const MASK_CHAR  = "●";
+const mask = s => MASK_CHARS.reduce((a,c)=>a.split(c).join(MASK_CHAR), String(s));
+
+const esc = s => mask(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
 /* 右ページ＝要点だけの資料。ナレーション（say）は画面に出さない。 */
 function notesPage(ch, pi, page, folio){
@@ -1564,7 +1575,7 @@ function fitBody(el){
 }
 
 function paint(el, spec){
-  el.innerHTML = spec.html;
+  el.innerHTML = mask(spec.html);   /* ページに出る文字は必ずここを通る */
   el.classList.toggle("anim",  !!spec.anim);
   el.classList.toggle("noanim", !spec.anim);
   fitBody(el);
@@ -1885,6 +1896,15 @@ addEventListener("keydown", e=>{
     const b = document.createElement("i");
     b.style.left = (i/(SPREADS.length-1)*100)+"%";
     el.appendChild(b);
+  });
+})();
+
+/* HTML に直接書いてある文字（タブ名・開始画面）にも伏せ字を適用する */
+(function maskStatic(){
+  document.title = mask(document.title);
+  ["#gate .g-t", "#gate .g-s", "#hint"].forEach(sel=>{
+    const el = $(sel);
+    if(el) el.innerHTML = mask(el.innerHTML);
   });
 })();
 
