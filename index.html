@@ -578,6 +578,10 @@ svg{display:block;overflow:visible;}
 /* 写真が入ったスライドでは、写真と役割がダブる装飾を隠す（写真なしなら従来どおり表示） */
 .photo.has-img ~ .wrap .photo-hide{display:none;}
 
+/* クリックで効果音が鳴る文字（押した瞬間だけ光る／transform は使わず浮遊と共存させる） */
+.se-tap-el,.se-punch-el{cursor:pointer;transition:filter .16s ease;}
+.se-hit{filter:brightness(1.5) saturate(1.15) drop-shadow(0 0 24px color-mix(in srgb,var(--accent2) 65%,transparent));}
+
 /* =====================================================================
    スライド 1：オープニング
    ===================================================================== */
@@ -1504,7 +1508,7 @@ svg{display:block;overflow:visible;}
   <div class="hud">
     <div class="hint">
       <div class="l1">←&nbsp;前へ　→&nbsp;次へ　F&nbsp;フルスクリーン</div>
-      <div class="l2">Space 次へ　Home 最初へ　End 最後へ　1〜9 ジャンプ　W ワイプ枠</div>
+      <div class="l2">Space 次へ　Home 最初へ　End 最後へ　1〜9 ジャンプ　W ワイプ枠　M <span id="seState">音 ON</span></div>
     </div>
     <div class="prog">
       <div class="dots" id="dots">
@@ -1547,6 +1551,24 @@ var IMAGES = {
   summary  : "img/city.webp",       /* 13 まとめ（夜景・2と共通） */
   ending   : "img/ending.webp"      /* 14 エンディング（夜景を見る二人） */
 };
+
+/* =====================================================================
+   ■ 効果音（差し替えは src、音量は vol／0＝無音 1＝最大）
+     ・page  : スライドをめくったとき
+     ・tap   : 文字をクリックしたとき
+     ・punch : ツッコミ・オチの文字をクリックしたとき
+     ・M キーでミュートの切り替えができます
+   ・poly は同時に鳴らせる数。1 なら連打しても前の音を止めて鳴らし直す
+   ===================================================================== */
+var SOUNDS = {
+  page : { src: "sound/page.mp3",  vol: 0.55, poly: 1 },
+  tap  : { src: "sound/tap.mp3",   vol: 0.55, poly: 3 },
+  punch: { src: "sound/punch.mp3", vol: 0.75, poly: 3 }
+};
+
+/* クリックで音が鳴る文字（ここに CSS セレクタを足せば増やせます） */
+var TAP_TARGETS   = '.chip, .item5, .sign, .word, .card3, .step, .sum .card, .bub, .pola, .cmp li, .sec-title, .item-title';
+var PUNCH_TARGETS = '.emph, .foot-msg, .sum-msg .q, .end-wrap .big, .s1-panel .lead, .end-sign span';
 
 (function () {
   'use strict';
@@ -1620,8 +1642,9 @@ var IMAGES = {
     curEl.textContent = (index + 1 < 10 ? '0' : '') + (index + 1);
     barEl.style.width = ((index + 1) / total * 100) + '%';
 
-    /* 切り替え演出（初回表示では鳴らさない） */
+    /* 切り替え演出と効果音（初回表示では鳴らさない） */
     if (!silent) {
+      playSe('page');
       retrigger(sweep, 'run');
       retrigger(dim, 'run');
       amb.style.setProperty('--sx', dir < 0 ? '-26px' : '26px');
@@ -1656,6 +1679,46 @@ var IMAGES = {
     } catch (err) { /* 非対応環境では何もしない */ }
   }
 
+  /* ---------- 効果音（音源を使い回すので長時間でも増え続けない） ---------- */
+  var se    = {};
+  var muted = false;
+
+  function initSounds() {
+    Object.keys(SOUNDS).forEach(function (name) {
+      var cfg = SOUNDS[name];
+      if (!cfg || !cfg.src) { return; }
+      var list = [];
+      var n = Math.max(1, cfg.poly || 1);
+      for (var i = 0; i < n; i++) {
+        var a = new Audio(cfg.src);
+        a.preload = 'auto';
+        a.volume = Math.min(1, Math.max(0, cfg.vol));
+        list.push(a);
+      }
+      se[name] = { list: list, i: 0 };
+    });
+    deck.querySelectorAll(TAP_TARGETS).forEach(function (el) { el.classList.add('se-tap-el'); });
+    deck.querySelectorAll(PUNCH_TARGETS).forEach(function (el) { el.classList.add('se-punch-el'); });
+  }
+
+  function playSe(name) {
+    var s = se[name];
+    if (!s || muted) { return; }
+    var a = s.list[s.i];
+    s.i = (s.i + 1) % s.list.length;
+    try {
+      a.currentTime = 0;
+      var p = a.play();
+      if (p && p.catch) { p.catch(function () {}); }   /* 再生できない環境でも無視 */
+    } catch (err) { /* 音が出せなくても操作は続行 */ }
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    var el = document.getElementById('seState');
+    if (el) { el.textContent = muted ? '音 OFF' : '音 ON'; }
+  }
+
   /* ---------- 一定時間操作がなければ UI を薄くする ---------- */
   function wake() {
     app.classList.remove('idle');
@@ -1674,12 +1737,23 @@ var IMAGES = {
     if (k === 'f' || k === 'F') { e.preventDefault(); toggleFull(); return; }
     if (k === 'Escape') { if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (err) {} } return; }
     if (k === 'w' || k === 'W') { app.classList.toggle('show-wipe'); return; }
+    if (k === 'm' || k === 'M') { toggleMute(); return; }
     if (k >= '1' && k <= '9') { nav(parseInt(k, 10) - 1); }
   });
 
   /* ---------- マウス操作 ---------- */
   document.getElementById('edgeR').addEventListener('click', next);
   document.getElementById('edgeL').addEventListener('click', prev);
+
+  /* 文字をクリックすると効果音＋一瞬だけ光る（スライドは進めない） */
+  deck.addEventListener('click', function (e) {
+    var el = e.target && e.target.closest ? e.target.closest('.se-punch-el, .se-tap-el') : null;
+    if (!el) { return; }
+    playSe(el.classList.contains('se-punch-el') ? 'punch' : 'tap');
+    el.classList.add('se-hit');
+    clearTimeout(el.seTimer);
+    el.seTimer = setTimeout(function () { el.classList.remove('se-hit'); }, 240);
+  });
   document.addEventListener('mousemove', wake, { passive: true });
   document.addEventListener('dragstart', function (e) { e.preventDefault(); });
 
@@ -1691,6 +1765,7 @@ var IMAGES = {
   fit();
   if (total > 0) { apply(0, 1, true); }
   wake();
+  try { initSounds(); } catch (err) { /* 音が使えなくてもスライドは動く */ }
 
   /* ---------- 背景写真の読み込み（失敗してもネオン背景のまま） ---------- */
   try {
