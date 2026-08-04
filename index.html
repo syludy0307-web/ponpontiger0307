@@ -314,6 +314,42 @@ svg{display:block;overflow:visible;}
 @keyframes logoBreath{0%,100%{opacity:.42;}48%{opacity:1;}52%{opacity:.9;}}
 
 /* =====================================================================
+   左上の告知バナー（全スライド共通・チカチカ光るネオン）
+   文言は HTML 側、大きさ・位置はこの変数で調整できます
+   ===================================================================== */
+.promo{
+  position:absolute;top:var(--promo-top,12px);left:var(--promo-left,44px);z-index:60;
+  padding:6px 24px 8px;border-radius:10px;pointer-events:none;
+  border:1.5px solid rgba(120,230,255,.5);
+  background:linear-gradient(180deg,rgba(6,16,32,.62),rgba(6,8,20,.5));
+}
+.promo::after{ /* 枠まわりの光も一緒に明滅させる */
+  content:"";position:absolute;inset:-2px;border-radius:12px;pointer-events:none;
+  box-shadow:0 0 22px rgba(53,230,255,.6),0 0 56px rgba(255,79,163,.3),inset 0 0 26px rgba(53,230,255,.16);
+  animation:neonFlicker 4.6s steps(1,end) infinite;
+}
+.promo span{display:block;font-weight:900;letter-spacing:.04em;white-space:nowrap;color:#fff;}
+.promo .l1{
+  font-size:var(--promo-size,27px);line-height:1.14;
+  text-shadow:0 0 6px #fff,0 0 14px rgba(90,225,255,1),0 0 30px rgba(53,230,255,.9),0 0 58px rgba(53,230,255,.55);
+  animation:neonFlicker 4.6s steps(1,end) infinite;
+}
+.promo .l2{
+  font-size:calc(var(--promo-size,27px) - 2px);line-height:1.16;margin-top:1px;
+  text-shadow:0 0 6px #fff,0 0 14px rgba(255,120,190,1),0 0 30px rgba(255,79,163,.9),0 0 58px rgba(255,79,163,.55);
+  animation:neonFlicker 5.3s steps(1,end) infinite -1.7s;   /* 2行を少しズラして本物っぽく */
+}
+/* 切れかけのネオン風。消える時間は40ms前後なので読みづらくはならない */
+@keyframes neonFlicker{
+  0%,100%{opacity:1;}
+  6%{opacity:.34;}  7%{opacity:1;}
+  8.5%{opacity:.5;} 9.4%{opacity:1;}
+  46%{opacity:.3;}  47%{opacity:1;}
+  71.5%{opacity:.55;} 72.4%{opacity:1;}
+  73.4%{opacity:.32;} 74.3%{opacity:1;}
+}
+
+/* =====================================================================
    スライド共通レイアウト & 切替トランジション
    ===================================================================== */
 #deck{position:absolute;inset:0;}
@@ -1493,6 +1529,12 @@ svg{display:block;overflow:visible;}
   </section>
 
   </main>
+
+  <!-- ===== 左上の告知バナー（全スライド共通・文言はここを書き換え） ===== -->
+  <div class="promo">
+    <span class="l1">PremierSinjuEast 8/7からイベント！</span>
+    <span class="l2">Cocoの指名お願いします…！</span>
+  </div>
 
   <!-- ===== 固定ロゴ（全スライド共通・右上） ===== -->
   <div class="logo"><span>フィリピン夜のラジオ2nd</span></div>
