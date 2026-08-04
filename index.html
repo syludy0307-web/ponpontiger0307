@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>【フィリピン恋愛】気になる子や彼女にすると喜ばれる5つの事｜フィリピン夜のラジオ2nd</title>
+<style>
+/* =====================================================================
+   フィリピン夜のラジオ 2nd  ―  プレゼンテーション
+   すべて 1920×1080 の固定ステージ上に構築し、画面サイズに合わせて
+   まるごと拡大縮小する（レイアウト崩れゼロ / OBS キャプチャ対応）
+   ===================================================================== */
+
+/* ---------- 変数（配色・速度はここで一括管理） ---------- */
+@property --accent  { syntax:'<color>'; inherits:true; initial-value:#ff4fa3; }
+@property --accent2 { syntax:'<color>'; inherits:true; initial-value:#35e6ff; }
+
+:root{
+  /* 基本色 */
+  --ink:#f2f5ff;
+  --ink-dim:#b8c2e0;
+  --bg0:#04050d;
+
+  /* ネオンのパレット（各スライドの data-accent / data-accent2 から参照） */
+  --pink:#ff4fa3;
+  --magenta:#ff36cf;
+  --purple:#8a5bff;
+  --blue:#2f6bff;
+  --cyan:#35e6ff;
+  --gold:#ffcf8a;
+  --warn:#ff5f7a;
+
+  /* スライドごとに JS が差し替えるアクセント */
+  --accent:#ff4fa3;
+  --accent2:#35e6ff;
+
+  /* ワイプ（ワイプ映像）用セーフゾーン: 右下 */
+  --wipe-w:520px;
+  --wipe-h:390px;
+  --wipe-m:36px;
+
+  /* モーション */
+  --t:1.05s;                       /* スライド切替時間 */
+  --e:cubic-bezier(.22,.75,.24,1); /* 標準イージング */
+  --amb-city:150s;                 /* 夜景の横移動 */
+  --amb-zoom:64s;                  /* 夜景のズーム */
+  --amb-breath:9s;                 /* ネオンの呼吸 */
+
+  /* フォント（外部読み込みなし / 端末内蔵フォントのみ） */
+  --font:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic","Meiryo",system-ui,sans-serif;
+  --font-en:"Bahnschrift","DIN Alternate","Helvetica Neue",Arial,var(--font);
+}
+
+/* ---------- リセット ---------- */
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:#03040a;}
+body{
+  font-family:var(--font);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  user-select:none;-webkit-user-select:none;
+  -webkit-user-drag:none;
+  cursor:default;
+}
+::-webkit-scrollbar{width:0;height:0;display:none;}
+svg{display:block;overflow:visible;}
+
+/* ---------- ステージ（1920×1080 を等比スケール） ---------- */
+#app{
+  position:fixed;inset:0;overflow:hidden;
+  background:radial-gradient(120% 120% at 50% 45%,#080b1a 0%,#03040a 72%);
+}
+#stage{
+  position:absolute;left:50%;top:50%;
+  width:1920px;height:1080px;
+  transform:translate(-50%,-50%) scale(var(--scale,1));
+  transform-origin:50% 50%;
+  overflow:hidden;
+  background:var(--bg0);
+  transition:--accent 1.2s ease,--accent2 1.2s ease;
+  box-shadow:0 0 120px rgba(0,0,0,.9);
+}
+
+/* =====================================================================
+   常時アニメーションする背景（スライドを跨いで止まらない）
+   ===================================================================== */
+.amb{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+
+/* 1) ゆっくり変化するグラデーション */
+.amb-grad{
+  position:absolute;inset:-12%;
+  background:linear-gradient(175deg,#05060f 0%,#0a0a1c 45%,#140a24 100%);
+  background:
+    radial-gradient(58% 48% at 16% 20%,color-mix(in srgb,var(--accent) 42%,transparent) 0%,transparent 62%),
+    radial-gradient(52% 44% at 84% 26%,color-mix(in srgb,var(--accent2) 38%,transparent) 0%,transparent 64%),
+    radial-gradient(78% 60% at 50% 116%,rgba(47,107,255,.34) 0%,transparent 62%),
+    linear-gradient(175deg,#05060f 0%,#0a0a1c 45%,#140a24 100%);
+  animation:gradShift 38s ease-in-out infinite alternate;
+}
+@keyframes gradShift{
+  0%  {transform:translate3d(-1.4%,-1%,0) scale(1.02);filter:saturate(1) brightness(1);}
+  100%{transform:translate3d(1.4%,1.2%,0) scale(1.06);filter:saturate(1.14) brightness(1.08);}
+}
+
+/* 2) 夜景（CSS グラデーションだけで構成したスカイライン） */
+.cityscape{
+  position:absolute;left:0;right:0;bottom:0;height:56%;
+  transform-origin:50% 100%;
+  animation:cityZoom var(--amb-zoom) ease-in-out infinite alternate;
+  opacity:.96;
+}
+@keyframes cityZoom{0%{transform:scale(1) translateY(0);}100%{transform:scale(1.075) translateY(-8px);}}
+.cityscape::after{ /* 手前ほど夜の闇に沈ませ、文字を読みやすくする */
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(0deg,rgba(3,4,10,.94) 0%,rgba(3,4,10,.55) 24%,transparent 60%);
+}
+
+.city{position:absolute;bottom:0;left:0;height:100%;background-repeat:repeat-x;}
+.city-far{
+  --sky:
+    linear-gradient(90deg,transparent 0 26px,#0a1024 26px 104px,transparent 104px 640px),
+    linear-gradient(90deg,transparent 0 128px,#0b1128 128px 196px,transparent 196px 640px),
+    linear-gradient(90deg,transparent 0 224px,#090f22 224px 322px,transparent 322px 640px),
+    linear-gradient(90deg,transparent 0 348px,#0c1330 348px 410px,transparent 410px 640px),
+    linear-gradient(90deg,transparent 0 436px,#0a1026 436px 528px,transparent 528px 640px),
+    linear-gradient(90deg,transparent 0 552px,#0b1229 552px 618px,transparent 618px 640px);
+  --sky-size:640px 210px,640px 268px,640px 176px,640px 296px,640px 232px,640px 190px;
+  width:2560px;height:66%;bottom:12%;
+  background-image:var(--sky);
+  background-size:var(--sky-size);
+  background-position:0 100%;
+  animation:panFar 190s linear infinite;
+  opacity:.8;
+}
+.city-near{
+  --sky:
+    linear-gradient(90deg,transparent 0 40px,#080d20 40px 172px,transparent 172px 960px),
+    linear-gradient(90deg,transparent 0 192px,#0a0f26 192px 300px,transparent 300px 960px),
+    linear-gradient(90deg,transparent 0 322px,#070b1c 322px 468px,transparent 468px 960px),
+    linear-gradient(90deg,transparent 0 490px,#0b1129 490px 588px,transparent 588px 960px),
+    linear-gradient(90deg,transparent 0 612px,#080c1e 612px 742px,transparent 742px 960px),
+    linear-gradient(90deg,transparent 0 764px,#0a0e24 764px 848px,transparent 848px 960px),
+    linear-gradient(90deg,transparent 0 866px,#070c1f 866px 948px,transparent 948px 960px);
+  --sky-size:960px 300px,960px 386px,960px 246px,960px 430px,960px 292px,960px 352px,960px 208px;
+  width:2880px;height:100%;
+  background-image:var(--sky);
+  background-size:var(--sky-size);
+  background-position:0 100%;
+  animation:panNear var(--amb-city) linear infinite;
+}
+@keyframes panFar {to{transform:translate3d(-640px,0,0);}}
+@keyframes panNear{to{transform:translate3d(-960px,0,0);}}
+
+/* 窓明かり（建物シルエットでマスク） */
+.city-win{
+  position:absolute;bottom:0;left:0;width:100%;height:100%;
+  background-image:
+    repeating-linear-gradient(0deg,rgba(255,214,160,.34) 0 3px,transparent 3px 14px),
+    repeating-linear-gradient(0deg,rgba(120,220,255,.26) 0 2px,transparent 2px 25px),
+    repeating-linear-gradient(90deg,rgba(255,190,220,.16) 0 2px,transparent 2px 9px);
+  -webkit-mask-image:var(--sky);mask-image:var(--sky);
+  -webkit-mask-size:var(--sky-size);mask-size:var(--sky-size);
+  -webkit-mask-repeat:repeat-x;mask-repeat:repeat-x;
+  -webkit-mask-position:0 100%;mask-position:0 100%;
+  animation:inherit;
+  mix-blend-mode:screen;
+}
+.city-far .city-win{animation:panFar 190s linear infinite,winBreath 11s ease-in-out infinite;}
+.city-near .city-win{animation:panNear var(--amb-city) linear infinite,winBreath 8.5s ease-in-out infinite -3s;}
+@keyframes winBreath{0%,100%{opacity:.62;}50%{opacity:1;}}
+
+/* 地平線の光 */
+.horizon{
+  position:absolute;left:0;right:0;bottom:26%;height:46%;
+  background:
+    linear-gradient(0deg,color-mix(in srgb,var(--accent) 40%,transparent) 0%,transparent 72%),
+    radial-gradient(60% 100% at 30% 100%,rgba(255,180,120,.22) 0%,transparent 68%),
+    radial-gradient(50% 100% at 78% 100%,rgba(90,190,255,.2) 0%,transparent 66%);
+  animation:breathe var(--amb-breath) ease-in-out infinite;
+  mix-blend-mode:screen;
+}
+
+/* 3) ネオンの光球（呼吸するように明滅） */
+.orb{position:absolute;border-radius:50%;mix-blend-mode:screen;filter:saturate(1.3);}
+.orb-a{left:-8%;top:6%;width:820px;height:820px;
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent) 52%,transparent) 0%,transparent 66%);
+  animation:breathe 12s ease-in-out infinite,drift 46s ease-in-out infinite alternate;}
+.orb-b{right:-10%;top:-14%;width:900px;height:900px;
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent2) 44%,transparent) 0%,transparent 66%);
+  animation:breathe 15s ease-in-out infinite -4s,drift 58s ease-in-out infinite alternate-reverse;}
+.orb-c{left:38%;bottom:-26%;width:1000px;height:760px;
+  background:radial-gradient(circle,rgba(138,91,255,.42) 0%,transparent 68%);
+  animation:breathe 17s ease-in-out infinite -7s;}
+@keyframes breathe{0%,100%{opacity:.45;}50%{opacity:.92;}}
+@keyframes drift{0%{transform:translate3d(0,0,0);}100%{transform:translate3d(70px,44px,0);}}
+
+/* 4) 薄い霧（ブラー不使用・グラデーションのみで軽量） */
+.fog{position:absolute;inset:-20%;mix-blend-mode:screen;opacity:.5;}
+.fog-1{background:
+    radial-gradient(38% 26% at 22% 68%,rgba(150,180,255,.16),transparent 70%),
+    radial-gradient(30% 22% at 62% 78%,rgba(255,160,220,.14),transparent 72%);
+  animation:fogA 72s linear infinite;}
+.fog-2{background:
+    radial-gradient(44% 24% at 78% 62%,rgba(120,230,255,.13),transparent 70%),
+    radial-gradient(26% 18% at 34% 86%,rgba(200,150,255,.14),transparent 74%);
+  animation:fogB 96s linear infinite;}
+@keyframes fogA{0%{transform:translate3d(-6%,0,0);}50%{transform:translate3d(6%,-2%,0);}100%{transform:translate3d(-6%,0,0);}}
+@keyframes fogB{0%{transform:translate3d(5%,1%,0);}50%{transform:translate3d(-5%,-1%,0);}100%{transform:translate3d(5%,1%,0);}}
+
+/* 5) 漂う光の粒（数を固定・DOM は増やさない） */
+.dust{position:absolute;inset:0;}
+.dust i{
+  position:absolute;bottom:-40px;left:var(--x);
+  width:var(--s);height:var(--s);border-radius:50%;
+  background:radial-gradient(circle,#fff 0%,color-mix(in srgb,var(--accent2) 70%,#fff) 40%,transparent 70%);
+  opacity:0;
+  animation:rise var(--dur) linear infinite var(--dl);
+}
+@keyframes rise{
+  0%  {opacity:0;transform:translate3d(0,0,0) scale(.7);}
+  12% {opacity:.85;}
+  70% {opacity:.6;}
+  100%{opacity:0;transform:translate3d(var(--dx,40px),-1160px,0) scale(1.15);}
+}
+
+/* 6) 遠くを漂うハート型のボケ */
+.hearts{position:absolute;inset:0;}
+.hearts i{
+  position:absolute;bottom:-120px;left:var(--x);
+  width:var(--s);height:var(--s);
+  background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--accent) 85%,#fff) 0%,color-mix(in srgb,var(--accent) 55%,transparent) 55%,transparent 72%);
+  -webkit-mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 28.5S2.5 20.6 2.5 11.9C2.5 7.5 6 4 10.3 4c2.4 0 4.5 1.1 5.7 2.9C17.2 5.1 19.3 4 21.7 4 26 4 29.5 7.5 29.5 11.9c0 8.7-13.5 16.6-13.5 16.6z'/></svg>");
+  mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 28.5S2.5 20.6 2.5 11.9C2.5 7.5 6 4 10.3 4c2.4 0 4.5 1.1 5.7 2.9C17.2 5.1 19.3 4 21.7 4 26 4 29.5 7.5 29.5 11.9c0 8.7-13.5 16.6-13.5 16.6z'/></svg>");
+  -webkit-mask-size:contain;mask-size:contain;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  opacity:0;filter:blur(5px);
+  animation:heartUp var(--dur) linear infinite var(--dl);
+}
+@keyframes heartUp{
+  0%  {opacity:0;transform:translate3d(0,0,0) rotate(-6deg) scale(.8);}
+  15% {opacity:.26;}
+  75% {opacity:.15;}
+  100%{opacity:0;transform:translate3d(var(--dx,-60px),-1240px,0) rotate(8deg) scale(1.1);}
+}
+
+/* 7) ゆっくり流れる細い光の線 */
+.streaks{position:absolute;inset:0;}
+.streaks i{
+  position:absolute;left:-30%;top:var(--y);width:60%;height:1px;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent2) 90%,#fff),transparent);
+  opacity:0;transform:rotate(-8deg);
+  animation:streak var(--dur) linear infinite var(--dl);
+  box-shadow:0 0 12px color-mix(in srgb,var(--accent2) 70%,transparent);
+}
+@keyframes streak{
+  0%{opacity:0;transform:translate3d(0,0,0) rotate(-8deg);}
+  20%{opacity:.5;}
+  80%{opacity:.35;}
+  100%{opacity:0;transform:translate3d(160%,-80px,0) rotate(-8deg);}
+}
+
+/* 8) 画面全体のガラス反射（ごく薄いシーン） */
+.sheen{
+  position:absolute;top:-30%;left:-60%;width:46%;height:170%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.055) 42%,rgba(255,255,255,.11) 50%,rgba(255,255,255,.055) 58%,transparent);
+  transform:rotate(9deg);
+  animation:sheenGo 19s ease-in-out infinite;
+  mix-blend-mode:screen;
+}
+@keyframes sheenGo{0%,100%{left:-60%;}55%,60%{left:150%;}}
+
+/* 9) 質感（グレイン & ビネット） */
+.grain{
+  position:absolute;inset:0;opacity:.05;mix-blend-mode:overlay;
+  background-image:repeating-radial-gradient(circle at 0 0,rgba(255,255,255,.5) 0 1px,transparent 1px 3px);
+  background-size:3px 3px;
+  animation:grainMove 6s steps(3) infinite;
+}
+@keyframes grainMove{0%{background-position:0 0;}33%{background-position:1px 2px;}66%{background-position:2px 1px;}100%{background-position:0 0;}}
+.vignette{
+  position:absolute;inset:0;
+  background:radial-gradient(120% 92% at 50% 44%,transparent 42%,rgba(0,0,0,.55) 82%,rgba(0,0,0,.86) 100%);
+}
+
+/* =====================================================================
+   固定ロゴ（全スライド共通・右上）
+   ===================================================================== */
+.logo{
+  position:absolute;top:34px;right:44px;z-index:60;
+  padding:13px 30px 15px;
+  border:1.5px solid rgba(255,146,200,.55);
+  border-radius:10px;
+  background:linear-gradient(180deg,rgba(20,6,26,.62),rgba(6,8,20,.5));
+  box-shadow:0 0 18px rgba(255,79,163,.35),0 0 46px rgba(53,230,255,.18),inset 0 0 22px rgba(255,79,163,.14);
+  pointer-events:none;
+}
+.logo span{
+  display:block;
+  font-size:34px;font-weight:800;letter-spacing:.09em;
+  color:#fff;
+  text-shadow:
+    0 0 6px #fff,
+    0 0 16px rgba(255,110,185,.95),
+    0 0 34px rgba(255,79,163,.7),
+    0 0 62px rgba(53,230,255,.45);
+}
+.logo::after{ /* ごく弱い明滅はグロー層の不透明度だけで表現（文字は常に鮮明） */
+  content:"";position:absolute;inset:-2px;border-radius:12px;pointer-events:none;
+  box-shadow:0 0 26px rgba(255,79,163,.5),0 0 60px rgba(53,230,255,.28);
+  animation:logoBreath 6.4s ease-in-out infinite;
+}
+@keyframes logoBreath{0%,100%{opacity:.42;}48%{opacity:1;}52%{opacity:.9;}}
+
+/* =====================================================================
+   スライド共通レイアウト & 切替トランジション
+   ===================================================================== */
+#deck{position:absolute;inset:0;}
+.slide{
+  position:absolute;inset:0;
+  opacity:0;visibility:hidden;
+  transform:translate3d(var(--enterX,64px),0,0) scale(1.012);
+  filter:brightness(.5) saturate(.85);
+  transition:opacity var(--t) var(--e),transform var(--t) var(--e),filter var(--t) var(--e),visibility 0s linear var(--t);
+}
+.slide.is-active{opacity:1;visibility:visible;transform:none;filter:none;transition-delay:0s;}
+.slide.is-leaving{
+  opacity:0;visibility:visible;
+  transform:translate3d(var(--leaveX,-64px),0,0) scale(.988);
+  filter:brightness(.3) saturate(.7);
+  transition-delay:0s;
+}
+#deck.dir-prev .slide{--enterX:-64px;--leaveX:64px;}
+/* 非表示スライドのアニメーションは完全停止（長時間表示でも軽い） */
+.slide:not(.is-active):not(.is-leaving) *{animation-play-state:paused!important;}
+
+/* コンテンツ枠（右下はワイプ用に常に空ける） */
+.wrap{position:absolute;left:110px;top:100px;width:1700px;height:850px;}
+
+/* 登場アニメーション（data-anim / --d で遅延指定） */
+[data-anim]{opacity:0;}
+.slide.is-active [data-anim]      {animation:animUp .95s var(--e) both;animation-delay:var(--d,0s);}
+.slide.is-active [data-anim=left] {animation-name:animLeft;}
+.slide.is-active [data-anim=right]{animation-name:animRight;}
+.slide.is-active [data-anim=pop]  {animation-name:animPop;}
+.slide.is-active [data-anim=fade] {animation-name:animFade;animation-duration:1.15s;}
+.slide.is-active [data-anim=line] {animation-name:animLine;animation-duration:1.1s;}
+.slide.is-active [data-anim=drop] {animation-name:animDrop;animation-duration:.9s;}
+@keyframes animUp   {from{opacity:0;transform:translate3d(0,52px,0);}to{opacity:1;transform:none;}}
+@keyframes animLeft {from{opacity:0;transform:translate3d(-64px,0,0);}to{opacity:1;transform:none;}}
+@keyframes animRight{from{opacity:0;transform:translate3d(64px,0,0);}to{opacity:1;transform:none;}}
+@keyframes animPop  {from{opacity:0;transform:scale(.86);}to{opacity:1;transform:none;}}
+@keyframes animFade {from{opacity:0;}to{opacity:1;}}
+@keyframes animLine {from{opacity:0;transform:scaleX(0);}to{opacity:1;transform:scaleX(1);}}
+@keyframes animDrop {
+  0%{opacity:0;transform:translate3d(0,-70px,0) rotate(var(--rot,0deg)) scale(1.05);}
+  60%{opacity:1;}
+  100%{opacity:1;transform:translate3d(0,0,0) rotate(var(--rot,0deg)) scale(1);}
+}
+/* カード類は「登場」と「わずかな上下の揺れ」を両立させる */
+.slide.is-active .item5,
+.slide.is-active .card3,
+.slide.is-active .step,
+.slide.is-active .sum .card{
+  animation:animUp .95s var(--e) both var(--d,0s),floaty 7.5s ease-in-out infinite var(--fd,0s);
+}
+
+/* 切替時の演出（ネオンライン横断・全体の暗転） */
+.sweep{
+  position:absolute;left:0;right:0;top:52%;height:2px;z-index:55;pointer-events:none;opacity:0;
+  background:linear-gradient(90deg,transparent,var(--accent2) 18%,#fff 50%,var(--accent) 82%,transparent);
+  box-shadow:0 0 26px color-mix(in srgb,var(--accent2) 80%,transparent);
+  transform-origin:0 50%;
+}
+.sweep.run{animation:sweepGo 1s cubic-bezier(.3,.9,.2,1);}
+@keyframes sweepGo{
+  0%{opacity:0;transform:scaleX(0) translate3d(0,-130px,0);}
+  14%{opacity:.95;}
+  62%{opacity:.9;transform:scaleX(1) translate3d(0,0,0);}
+  100%{opacity:0;transform:scaleX(1) translate3d(0,100px,0);}
+}
+.dim{position:absolute;inset:0;z-index:54;pointer-events:none;background:#02030a;opacity:0;}
+.dim.run{animation:dimGo 1s ease-out;}
+@keyframes dimGo{0%{opacity:0;}22%{opacity:.34;}100%{opacity:0;}}
+
+/* 背景も切替に合わせて少し横へ流れる */
+.amb.shift .cityscape,.amb.shift .fog-1{animation-play-state:running;}
+.amb.shift{animation:ambShift 1.05s var(--e);}
+@keyframes ambShift{0%{transform:translate3d(var(--sx,26px),0,0);}100%{transform:none;}}
+
+/* =====================================================================
+   共通パーツ（ガラスパネル / ネオン文字 / カード など）
+   ===================================================================== */
+.glass{
+  position:relative;overflow:hidden;
+  background:linear-gradient(158deg,rgba(20,24,52,.62) 0%,rgba(6,8,20,.72) 62%,rgba(10,6,24,.66) 100%);
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:20px;
+  box-shadow:
+    0 24px 70px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 0 44px rgba(120,150,255,.06);
+}
+.glass::before{ /* 上辺のハイライト */
+  content:"";position:absolute;left:8%;right:8%;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);
+}
+.glass::after{ /* ゆっくり動く反射 */
+  content:"";position:absolute;top:-60%;left:-40%;width:36%;height:220%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.07) 45%,rgba(255,255,255,.13) 50%,rgba(255,255,255,.07) 55%,transparent);
+  transform:rotate(10deg);
+  animation:panelSheen 14s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes panelSheen{0%,100%{left:-46%;}55%,62%{left:132%;}}
+
+.neon-edge{
+  border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);
+  box-shadow:
+    0 0 20px color-mix(in srgb,var(--accent) 34%,transparent),
+    inset 0 0 26px color-mix(in srgb,var(--accent) 12%,transparent),
+    0 24px 60px rgba(0,0,0,.5);
+}
+
+.kicker{
+  font-size:25px;font-weight:700;letter-spacing:.3em;
+  color:var(--accent2);
+  text-shadow:0 0 14px color-mix(in srgb,var(--accent2) 70%,transparent);
+}
+.sec-title{
+  font-size:66px;font-weight:900;line-height:1.22;letter-spacing:.02em;
+  text-shadow:0 0 10px rgba(255,255,255,.35),0 0 40px color-mix(in srgb,var(--accent) 55%,transparent),0 6px 24px rgba(0,0,0,.8);
+}
+.item-title{
+  font-size:86px;font-weight:900;line-height:1.16;letter-spacing:.01em;
+  text-shadow:0 0 12px rgba(255,255,255,.4),0 0 44px color-mix(in srgb,var(--accent) 60%,transparent),0 8px 30px rgba(0,0,0,.85);
+}
+.emph{
+  font-size:46px;font-weight:700;line-height:1.5;color:#fff;
+  text-shadow:0 0 26px color-mix(in srgb,var(--accent2) 55%,transparent),0 4px 20px rgba(0,0,0,.9);
+}
+.note{font-size:34px;font-weight:500;line-height:1.7;color:var(--ink-dim);}
+/* 強調は「アクセント色を明るく寄せた色」＋グローで、暗い背景でも必ず読める */
+.hl{color:color-mix(in srgb,var(--accent2) 52%,#fff);
+  text-shadow:0 0 10px rgba(255,255,255,.85),0 0 30px color-mix(in srgb,var(--accent2) 90%,transparent);}
+.hl-p{color:color-mix(in srgb,var(--accent) 52%,#fff);
+  text-shadow:0 0 10px rgba(255,255,255,.85),0 0 32px color-mix(in srgb,var(--accent) 90%,transparent);}
+
+.num-big{
+  font-family:var(--font-en);
+  font-size:200px;font-weight:900;line-height:.86;letter-spacing:.02em;
+  background:linear-gradient(180deg,#fff 0%,color-mix(in srgb,var(--accent) 70%,#fff) 46%,var(--accent) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 22px color-mix(in srgb,var(--accent) 65%,transparent)) drop-shadow(0 8px 26px rgba(0,0,0,.7));
+  animation:numGlow 7s ease-in-out infinite;
+}
+@keyframes numGlow{0%,100%{filter:drop-shadow(0 0 16px color-mix(in srgb,var(--accent) 45%,transparent)) drop-shadow(0 8px 26px rgba(0,0,0,.7));}50%{filter:drop-shadow(0 0 34px color-mix(in srgb,var(--accent) 80%,transparent)) drop-shadow(0 8px 26px rgba(0,0,0,.7));}}
+
+.nline{
+  height:3px;border-radius:2px;transform-origin:left center;
+  background:linear-gradient(90deg,var(--accent) 0%,var(--accent2) 58%,transparent 100%);
+  box-shadow:0 0 18px color-mix(in srgb,var(--accent) 75%,transparent);
+}
+.chip{
+  display:flex;align-items:center;gap:16px;
+  font-size:33px;font-weight:600;line-height:1.35;color:#eef2ff;
+  padding:14px 26px;border-radius:14px;
+  background:linear-gradient(120deg,rgba(14,18,42,.72),rgba(8,8,22,.6));
+  border:1px solid rgba(255,255,255,.13);
+  box-shadow:inset 0 0 24px rgba(120,150,255,.06),0 10px 26px rgba(0,0,0,.4);
+}
+.chip::before{
+  content:"";flex:0 0 auto;width:11px;height:11px;border-radius:50%;
+  background:var(--accent2);box-shadow:0 0 14px var(--accent2),0 0 28px color-mix(in srgb,var(--accent2) 70%,transparent);
+}
+.ico{width:52px;height:52px;flex:0 0 auto;color:var(--accent2);
+  filter:drop-shadow(0 0 10px color-mix(in srgb,var(--accent2) 80%,transparent));}
+.ico svg{width:100%;height:100%;}
+
+/* シルエット（人物）共通 */
+.sil{position:absolute;bottom:0;filter:drop-shadow(0 0 26px rgba(0,0,0,.85));}
+.sil svg{height:100%;width:auto;}
+.sil path,.sil circle,.sil ellipse{fill:#05060f;}
+.sil.rim path,.sil.rim circle{stroke:color-mix(in srgb,var(--accent) 70%,transparent);stroke-width:1.4;}
+
+/* =====================================================================
+   HUD（進行状況・操作ヒント・左右クリック領域）
+   ===================================================================== */
+.hud{position:absolute;inset:0;z-index:58;pointer-events:none;}
+.bar{
+  position:absolute;left:0;bottom:0;right:calc(var(--wipe-w) + var(--wipe-m) + 30px);height:3px;
+  background:rgba(255,255,255,.07);
+}
+.bar i{
+  display:block;height:100%;width:0;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  box-shadow:0 0 14px color-mix(in srgb,var(--accent2) 80%,transparent);
+  transition:width .8s var(--e);
+}
+.prog{
+  position:absolute;bottom:26px;right:calc(var(--wipe-w) + var(--wipe-m) + 44px);
+  display:flex;align-items:center;gap:22px;opacity:.72;
+}
+.dots{display:flex;align-items:center;gap:9px;}
+.dots i{
+  width:9px;height:9px;border-radius:50%;
+  background:rgba(255,255,255,.24);
+  transition:all .45s var(--e);
+}
+.dots i.on{
+  width:26px;border-radius:5px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  box-shadow:0 0 12px color-mix(in srgb,var(--accent2) 85%,transparent);
+}
+.count{font-family:var(--font-en);font-size:24px;font-weight:700;letter-spacing:.16em;color:#dfe6ff;}
+.count b{color:var(--accent2);font-weight:900;}
+
+.hint{
+  position:absolute;left:52px;bottom:26px;
+  transition:opacity .8s ease;
+}
+.hint .l1{font-size:23px;font-weight:600;letter-spacing:.1em;color:#e8edff;text-shadow:0 2px 10px rgba(0,0,0,.9);}
+.hint .l2{margin-top:6px;font-size:18px;letter-spacing:.09em;color:#93a0c4;}
+#app.idle .hint{opacity:.16;}
+#app.idle{cursor:none;}
+
+/* ワイプ用セーフゾーン（W キーで枠を表示） */
+.wipe-guide{
+  position:absolute;right:var(--wipe-m);bottom:var(--wipe-m);
+  width:var(--wipe-w);height:var(--wipe-h);z-index:59;pointer-events:none;
+  border:2px dashed rgba(255,79,163,.55);border-radius:16px;
+  background:rgba(255,79,163,.05);
+  opacity:0;transition:opacity .3s ease;
+}
+.wipe-guide span{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  font-size:24px;letter-spacing:.2em;color:rgba(255,160,205,.85);
+}
+#app.show-wipe .wipe-guide{opacity:1;}
+
+/* 左右クリック領域（普段はほぼ透明） */
+.edge{
+  position:fixed;top:0;bottom:0;width:8vw;min-width:90px;z-index:70;
+  border:0;background:transparent;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .35s ease;
+}
+.edge-l{left:0;}
+.edge-r{right:0;}
+.edge:hover{opacity:.6;}
+#app.idle .edge{opacity:0;}
+.edge svg{width:52px;height:52px;color:#fff;
+  filter:drop-shadow(0 0 12px rgba(255,79,163,.9)) drop-shadow(0 0 26px rgba(53,230,255,.6));}
+.edge::before{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(255,79,163,.16),transparent);
+}
+.edge-r::before{background:linear-gradient(270deg,rgba(53,230,255,.16),transparent);}
+/* =====================================================================
+   写真レイヤー（画像が読み込めない場合はネオン背景のまま）
+   ===================================================================== */
+.photo{
+  position:absolute;inset:0;
+  background-size:cover;background-position:center;
+  opacity:0;transition:opacity 1.4s ease;
+  transform:scale(1.06);
+  animation:photoDrift 54s ease-in-out infinite alternate;
+}
+.photo.has-img{opacity:.42;}
+.photo::after{
+  content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(90deg,rgba(3,4,10,.94) 0%,rgba(3,4,10,.72) 46%,rgba(3,4,10,.42) 100%),
+    linear-gradient(0deg,rgba(3,4,10,.9) 0%,rgba(3,4,10,.15) 55%,rgba(3,4,10,.5) 100%);
+}
+@keyframes photoDrift{0%{transform:scale(1.06) translate3d(-10px,0,0);}100%{transform:scale(1.13) translate3d(10px,-12px,0);}}
+
+/* =====================================================================
+   スライド 1：オープニング
+   ===================================================================== */
+.s1-panel{padding:56px 64px 62px;width:1170px;position:absolute;left:0;top:150px;}
+.s1-panel .t1{margin-top:26px;font-weight:900;letter-spacing:.01em;}
+.s1-panel .t1 span{display:block;font-size:76px;line-height:1.28;
+  text-shadow:0 0 10px rgba(255,255,255,.34),0 0 40px rgba(138,91,255,.5),0 8px 30px rgba(0,0,0,.85);}
+.s1-panel .t1 em{
+  font-style:normal;font-size:98px;font-weight:900;
+  background:linear-gradient(96deg,#fff 0%,var(--accent) 42%,var(--accent2) 96%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 26px color-mix(in srgb,var(--accent) 70%,transparent));
+  animation:titleGlow 6.5s ease-in-out infinite;
+}
+@keyframes titleGlow{
+  0%,100%{filter:drop-shadow(0 0 16px color-mix(in srgb,var(--accent) 45%,transparent));}
+  50%    {filter:drop-shadow(0 0 40px color-mix(in srgb,var(--accent) 85%,transparent)) drop-shadow(0 0 70px color-mix(in srgb,var(--accent2) 40%,transparent));}
+}
+.s1-panel .nline{margin:34px 0 30px;width:640px;}
+.s1-panel .lead{font-size:38px;font-weight:600;color:#e5ebff;letter-spacing:.02em;}
+.s1-couple{right:150px;bottom:312px;height:250px;}
+.s1-rail{
+  position:absolute;right:96px;bottom:306px;width:520px;height:3px;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent2) 80%,transparent),transparent);
+  box-shadow:0 0 20px color-mix(in srgb,var(--accent2) 60%,transparent);
+  animation:breathe 8s ease-in-out infinite;
+}
+
+/* =====================================================================
+   スライド 2 / 13：5項目リスト
+   ===================================================================== */
+.list5{position:absolute;left:0;top:180px;width:1200px;display:flex;flex-direction:column;gap:18px;}
+.item5{
+  display:flex;align-items:center;gap:30px;padding:20px 34px;height:118px;
+  border-radius:18px;
+  background:linear-gradient(110deg,rgba(18,22,50,.72),rgba(7,8,22,.62));
+  border:1px solid color-mix(in srgb,var(--accent) 34%,rgba(255,255,255,.12));
+  box-shadow:0 0 22px color-mix(in srgb,var(--accent) 16%,transparent),inset 0 1px 0 rgba(255,255,255,.16),0 16px 34px rgba(0,0,0,.42);
+}
+@keyframes floaty{0%,100%{transform:translate3d(0,0,0);}50%{transform:translate3d(0,-9px,0);}}
+.item5 .n{
+  font-family:var(--font-en);font-size:56px;font-weight:900;line-height:1;width:98px;flex:0 0 auto;
+  background:linear-gradient(180deg,#fff,var(--accent));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 14px color-mix(in srgb,var(--accent) 60%,transparent));
+}
+.item5 .tx{font-size:44px;font-weight:800;letter-spacing:.01em;text-shadow:0 2px 14px rgba(0,0,0,.8);}
+.item5 .ico{width:56px;height:56px;margin-left:auto;}
+
+/* 右側の装飾（大きなゴースト数字とネオンバー） */
+.ghost5{
+  position:absolute;right:70px;top:130px;width:470px;height:380px;
+  display:flex;align-items:center;justify-content:center;
+}
+.ghost5 b{
+  font-family:var(--font-en);font-size:330px;font-weight:900;line-height:.8;
+  color:transparent;-webkit-text-stroke:2px color-mix(in srgb,var(--accent) 45%,transparent);
+  opacity:.55;animation:breathe 9s ease-in-out infinite;
+}
+.ghost5 .bars{position:absolute;inset:auto 0 0 0;display:flex;gap:14px;justify-content:center;align-items:flex-end;height:110px;}
+.ghost5 .bars i{
+  width:12px;border-radius:6px;background:linear-gradient(180deg,var(--accent2),var(--accent));
+  box-shadow:0 0 14px color-mix(in srgb,var(--accent2) 70%,transparent);
+  animation:eq 2.6s ease-in-out infinite var(--dl);
+}
+@keyframes eq{0%,100%{height:22px;opacity:.6;}50%{height:98px;opacity:1;}}
+
+/* =====================================================================
+   スライド 3 / 5 / 7 / 9 / 11：各項目の導入（大きな番号）
+   ===================================================================== */
+.lead-col{position:absolute;left:0;top:10px;width:1100px;}
+.lead-col .num-big{margin-bottom:6px;}
+.lead-col .item-title{margin-bottom:30px;}
+.lead-col .nline{width:520px;margin-bottom:34px;}
+.lead-col .emph{margin-bottom:38px;}
+/* 見出しが2行になるスライド用（縦を少し詰める） */
+.lead-col.tight .num-big{font-size:160px;}
+.lead-col.tight .item-title{font-size:76px;margin-bottom:24px;}
+.lead-col.tight .nline{margin-bottom:28px;}
+.lead-col.tight .emph{margin-bottom:32px;}
+.lead-col.tight .chips.two{width:840px;}
+.chips{display:flex;flex-direction:column;gap:14px;width:860px;}
+.chips.two{flex-direction:row;flex-wrap:wrap;width:940px;}
+.chips.two .chip{width:calc(50% - 8px);font-size:30px;}
+
+/* スライド3：プレゼントボックス */
+.gift{position:absolute;right:120px;top:160px;width:420px;height:420px;}
+.gift .halo{
+  position:absolute;inset:-90px;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent) 55%,transparent) 0%,transparent 62%);
+  animation:giftFlash 4.6s ease-in-out infinite;mix-blend-mode:screen;
+}
+@keyframes giftFlash{0%,100%{opacity:.4;transform:scale(.96);}50%{opacity:1;transform:scale(1.06);}}
+.gift .box{
+  position:absolute;left:60px;top:150px;width:300px;height:220px;border-radius:14px;
+  background:linear-gradient(160deg,#2a1030,#14081f);
+  border:1.5px solid color-mix(in srgb,var(--accent) 70%,transparent);
+  box-shadow:0 0 34px color-mix(in srgb,var(--accent) 45%,transparent),inset 0 0 40px rgba(255,79,163,.18);
+}
+.gift .lid{
+  position:absolute;left:40px;top:110px;width:340px;height:64px;border-radius:12px;
+  background:linear-gradient(160deg,#341338,#1a0a26);
+  border:1.5px solid color-mix(in srgb,var(--accent) 75%,transparent);
+  box-shadow:0 0 30px color-mix(in srgb,var(--accent) 50%,transparent);
+}
+.gift .ribbon{position:absolute;left:192px;top:110px;width:36px;height:260px;
+  background:linear-gradient(180deg,var(--accent2),color-mix(in srgb,var(--accent2) 40%,transparent));
+  box-shadow:0 0 24px color-mix(in srgb,var(--accent2) 80%,transparent);opacity:.9;}
+.gift .bow{position:absolute;left:130px;top:64px;width:160px;height:70px;border-radius:50%;
+  border:5px solid var(--accent2);border-bottom-color:transparent;
+  box-shadow:0 0 22px color-mix(in srgb,var(--accent2) 80%,transparent);}
+.gift .spark{position:absolute;width:9px;height:9px;border-radius:50%;background:#fff;
+  box-shadow:0 0 14px #fff,0 0 30px var(--accent2);animation:twinkle 3.4s ease-in-out infinite var(--dl);}
+@keyframes twinkle{0%,100%{opacity:0;transform:scale(.5);}50%{opacity:1;transform:scale(1.2);}}
+.s3-sil{right:520px;bottom:180px;height:300px;opacity:.9;}
+
+/* =====================================================================
+   スライド 4 / 12：3枚カード
+   ===================================================================== */
+.cards3{position:absolute;left:0;top:206px;width:1700px;display:flex;gap:52px;align-items:center;justify-content:space-between;}
+.card3{
+  flex:1 1 0;height:296px;border-radius:22px;padding:34px 30px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;
+  background:linear-gradient(160deg,rgba(22,26,58,.72),rgba(7,8,22,.7));
+}
+.card3.big{height:344px;}
+.card3 .cw{font-size:52px;font-weight:900;line-height:1.3;letter-spacing:.01em;
+  text-shadow:0 0 12px rgba(255,255,255,.4),0 0 38px color-mix(in srgb,var(--accent) 60%,transparent);}
+.card3.big .cw{font-size:60px;}
+.card3 .cs{font-size:27px;color:var(--ink-dim);letter-spacing:.05em;}
+.card3 .glowline{width:120px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--accent2),transparent);
+  box-shadow:0 0 16px var(--accent2);}
+.foot-msg{position:absolute;left:0;top:600px;width:1200px;font-size:42px;font-weight:700;color:#eaf0ff;
+  text-shadow:0 0 24px color-mix(in srgb,var(--accent2) 50%,transparent),0 4px 18px rgba(0,0,0,.9);}
+
+/* =====================================================================
+   スライド 5：チャット風パネル（実在 SNS の UI は模倣しない独自デザイン）
+   ===================================================================== */
+.chat{position:absolute;right:70px;top:6px;width:560px;height:540px;border-radius:26px;padding:18px 22px 20px;
+  display:flex;flex-direction:column;}
+.chat .head{display:flex;align-items:center;gap:14px;padding:4px 6px 16px;border-bottom:1px solid rgba(255,255,255,.12);}
+.chat .av{width:42px;height:42px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,var(--accent2),var(--accent));
+  box-shadow:0 0 18px color-mix(in srgb,var(--accent) 70%,transparent);}
+.chat .nm{font-size:26px;font-weight:700;letter-spacing:.04em;}
+.chat .st{margin-left:auto;font-size:19px;color:var(--accent2);letter-spacing:.1em;}
+.chat .body{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:16px;}
+.bub{
+  max-width:80%;padding:12px 22px;border-radius:20px;font-size:28px;font-weight:600;line-height:1.3;
+  opacity:0;
+}
+.slide.is-active .bub{animation:bubIn .7s var(--e) both var(--d),floaty 6.5s ease-in-out infinite calc(var(--d) + .7s);}
+.bub.in{align-self:flex-start;border-bottom-left-radius:6px;
+  background:linear-gradient(140deg,rgba(30,36,74,.95),rgba(14,16,38,.92));
+  border:1px solid rgba(255,255,255,.14);}
+.bub.out{align-self:flex-end;border-bottom-right-radius:6px;color:#fff;
+  background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 62%,#1a0f2e),color-mix(in srgb,var(--accent2) 34%,#101a3a));
+  border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);
+  box-shadow:0 0 22px color-mix(in srgb,var(--accent) 30%,transparent);}
+@keyframes bubIn{from{opacity:0;transform:translate3d(0,26px,0) scale(.94);}to{opacity:1;transform:none;}}
+.read{align-self:flex-end;font-size:17px;color:#8fa0c8;letter-spacing:.1em;margin:-8px 6px 0 0;opacity:0;}
+.slide.is-active .read{animation:animFade .6s ease both var(--d);}
+
+/* =====================================================================
+   スライド 6：比較（悪い例／喜ばれる例）
+   ===================================================================== */
+.compare{position:absolute;left:0;top:180px;width:1700px;display:flex;gap:60px;}
+.cmp{flex:1 1 0;border-radius:22px;padding:34px 40px 40px;min-height:350px;}
+.cmp h3{font-size:40px;font-weight:900;letter-spacing:.04em;margin-bottom:12px;display:flex;align-items:center;gap:16px;}
+.cmp .badge{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;}
+.cmp ul{list-style:none;display:flex;flex-direction:column;gap:16px;margin-top:22px;}
+.cmp li{font-size:35px;font-weight:600;line-height:1.4;padding-left:34px;position:relative;color:#e9eeff;}
+.cmp li::before{content:"";position:absolute;left:0;top:.62em;width:14px;height:14px;border-radius:50%;}
+.cmp-bad{background:linear-gradient(160deg,rgba(58,14,44,.72),rgba(16,6,20,.72));
+  border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);
+  box-shadow:inset 0 0 40px rgba(180,40,90,.14),0 20px 50px rgba(0,0,0,.45);}
+.cmp-bad h3{color:color-mix(in srgb,var(--warn) 55%,#fff);text-shadow:0 0 22px color-mix(in srgb,var(--warn) 50%,transparent);}
+.cmp-bad .badge{background:color-mix(in srgb,var(--warn) 16%,transparent);
+  border:1px solid color-mix(in srgb,var(--warn) 55%,transparent);color:color-mix(in srgb,var(--warn) 55%,#fff);}
+.cmp-bad li::before{background:color-mix(in srgb,var(--warn) 78%,#000);box-shadow:0 0 12px color-mix(in srgb,var(--warn) 70%,transparent);}
+.cmp-bad li{color:#d9cfe0;}
+.cmp-good{background:linear-gradient(160deg,rgba(12,30,70,.72),rgba(26,10,44,.7));
+  border:1px solid color-mix(in srgb,var(--accent2) 48%,transparent);
+  box-shadow:inset 0 0 44px rgba(53,230,255,.1),0 0 28px color-mix(in srgb,var(--accent2) 18%,transparent),0 20px 50px rgba(0,0,0,.45);}
+.cmp-good h3{color:#fff;text-shadow:0 0 24px color-mix(in srgb,var(--accent2) 70%,transparent);}
+.cmp-good .badge{background:color-mix(in srgb,var(--accent2) 18%,transparent);border:1px solid color-mix(in srgb,var(--accent2) 65%,transparent);color:#fff;}
+.cmp-good li::before{background:var(--accent2);box-shadow:0 0 14px var(--accent2);}
+
+/* =====================================================================
+   スライド 7 / 8：言葉のネオンサイン & 音声波形
+   ===================================================================== */
+.signs{position:absolute;right:60px;top:96px;width:800px;display:flex;flex-direction:column;gap:12px;}
+.sign{
+  padding:10px 30px;border-radius:16px;text-align:center;line-height:1.3;
+  font-size:46px;font-weight:900;letter-spacing:.03em;color:#fff;
+  background:linear-gradient(120deg,rgba(16,10,34,.7),rgba(8,10,26,.6));
+  border:1.5px solid color-mix(in srgb,var(--accent) 46%,transparent);
+  text-shadow:0 0 8px #fff,0 0 26px color-mix(in srgb,var(--accent) 85%,transparent);
+  box-shadow:0 0 22px color-mix(in srgb,var(--accent) 22%,transparent),inset 0 0 30px color-mix(in srgb,var(--accent) 10%,transparent);
+  opacity:0;
+}
+.sign.en{font-family:var(--font-en);letter-spacing:.06em;}
+.slide.is-active .sign{animation:animPop .8s var(--e) both var(--d),signGlow 5.5s ease-in-out 3.1s infinite;}
+@keyframes signGlow{
+  0%,100%{box-shadow:0 0 18px color-mix(in srgb,var(--accent) 18%,transparent),inset 0 0 26px color-mix(in srgb,var(--accent) 8%,transparent);}
+  50%    {box-shadow:0 0 44px color-mix(in srgb,var(--accent) 55%,transparent),inset 0 0 40px color-mix(in srgb,var(--accent) 20%,transparent);}
+}
+.wave{position:absolute;left:0;top:560px;width:780px;height:130px;display:flex;align-items:center;justify-content:space-between;}
+.wave i{
+  flex:0 0 12px;border-radius:6px;min-height:8px;
+  background:linear-gradient(180deg,var(--accent2),var(--accent));
+  box-shadow:0 0 12px color-mix(in srgb,var(--accent2) 55%,transparent);
+  animation:wv 2.8s ease-in-out infinite var(--dl);
+}
+@keyframes wv{0%,100%{height:14%;opacity:.55;}50%{height:100%;opacity:1;}}
+.mic{position:absolute;right:40px;top:20px;width:210px;height:300px;opacity:.9;}
+.mic .cap{position:absolute;left:55px;top:0;width:100px;height:170px;border-radius:50px;
+  background:linear-gradient(160deg,#20264a,#0b0e22);border:1.5px solid color-mix(in srgb,var(--accent2) 60%,transparent);
+  box-shadow:0 0 26px color-mix(in srgb,var(--accent2) 40%,transparent),inset 0 0 24px rgba(53,230,255,.16);}
+.mic .grid{position:absolute;inset:12px;border-radius:44px;
+  background:repeating-linear-gradient(0deg,rgba(53,230,255,.3) 0 2px,transparent 2px 9px);}
+.mic .arc{position:absolute;left:25px;top:120px;width:160px;height:110px;border:3px solid color-mix(in srgb,var(--accent2) 70%,transparent);
+  border-top-color:transparent;border-radius:0 0 90px 90px;box-shadow:0 0 20px color-mix(in srgb,var(--accent2) 50%,transparent);}
+.mic .stem{position:absolute;left:100px;top:228px;width:10px;height:52px;background:color-mix(in srgb,var(--accent2) 60%,transparent);}
+.mic .base{position:absolute;left:45px;top:278px;width:120px;height:14px;border-radius:8px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent2) 70%,transparent),transparent);}
+.onair{
+  position:absolute;right:60px;top:452px;padding:12px 30px;border-radius:10px;
+  font-family:var(--font-en);font-size:30px;font-weight:900;letter-spacing:.24em;color:#fff;
+  border:1.5px solid color-mix(in srgb,var(--accent) 65%,transparent);
+  background:rgba(30,6,26,.5);
+  text-shadow:0 0 14px color-mix(in srgb,var(--accent) 90%,transparent);
+  box-shadow:0 0 24px color-mix(in srgb,var(--accent) 40%,transparent);
+  animation:breathe 5.5s ease-in-out infinite;
+}
+/* スライド8：中央の言葉群（常に読める状態で発光だけ順番に変化） */
+.cluster{position:absolute;left:0;top:180px;width:1700px;display:flex;flex-wrap:wrap;gap:26px 54px;align-items:baseline;justify-content:center;}
+.word{
+  position:relative;font-weight:900;letter-spacing:.03em;color:#fff;
+  text-shadow:0 0 8px rgba(255,255,255,.5),0 4px 22px rgba(0,0,0,.9);
+  animation:wordPulse 6.4s ease-in-out infinite var(--dl);
+}
+@keyframes wordPulse{
+  0%,100%{text-shadow:0 0 8px rgba(255,255,255,.45),0 0 22px color-mix(in srgb,var(--accent) 30%,transparent),0 4px 22px rgba(0,0,0,.9);}
+  50%    {text-shadow:0 0 12px #fff,0 0 40px color-mix(in srgb,var(--accent) 90%,transparent),0 0 78px color-mix(in srgb,var(--accent2) 55%,transparent),0 4px 22px rgba(0,0,0,.9);}
+}
+.word.w1{font-size:110px;}
+.word.w2{font-size:92px;}
+.word.w3{font-size:78px;}
+
+/* =====================================================================
+   スライド 9 / 10：思い出（ポラロイド・カレンダー・フロー）
+   ===================================================================== */
+.polas{position:absolute;right:20px;top:-10px;width:840px;height:560px;}
+.pola{
+  position:absolute;width:250px;padding:16px 16px 46px;border-radius:6px;
+  background:linear-gradient(160deg,#f3f1ea,#d9d6cc);
+  box-shadow:0 26px 50px rgba(0,0,0,.6),0 0 30px color-mix(in srgb,var(--accent) 22%,transparent);
+  transform:rotate(var(--rot,0deg));
+}
+.pola .pic{
+  height:190px;border-radius:3px;
+  background:
+    radial-gradient(60% 50% at 30% 30%,rgba(255,255,255,.5),transparent 60%),
+    linear-gradient(200deg,var(--c1,#2b1350),var(--c2,#0b1c3d));
+  position:relative;overflow:hidden;
+}
+.pola .pic::after{
+  content:"";position:absolute;left:-10%;right:-10%;bottom:0;height:52%;
+  background:
+    repeating-linear-gradient(90deg,rgba(255,220,170,.5) 0 2px,transparent 2px 12px),
+    linear-gradient(0deg,rgba(0,0,0,.65),transparent);
+  -webkit-mask-image:linear-gradient(0deg,#000 30%,transparent);
+  mask-image:linear-gradient(0deg,#000 30%,transparent);
+}
+.pola .cap{margin-top:12px;text-align:center;font-size:20px;font-weight:700;color:#2a2733;letter-spacing:.06em;}
+.slide.is-active .pola{animation:animDrop .95s var(--e) both var(--d);}
+
+.flow{position:absolute;left:0;top:340px;width:1700px;display:flex;align-items:center;justify-content:space-between;gap:18px;}
+.step{
+  flex:1 1 0;height:210px;border-radius:20px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:linear-gradient(160deg,rgba(20,24,54,.72),rgba(7,8,22,.68));
+}
+.step .sn{font-family:var(--font-en);font-size:22px;letter-spacing:.28em;color:var(--accent2);}
+.step .sw{font-size:46px;font-weight:900;white-space:nowrap;text-shadow:0 0 26px color-mix(in srgb,var(--accent) 55%,transparent);}
+.arrow{flex:0 0 auto;width:54px;height:22px;position:relative;opacity:.9;}
+.arrow::before{content:"";position:absolute;left:0;top:10px;width:100%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent2));box-shadow:0 0 12px var(--accent2);}
+.arrow::after{content:"";position:absolute;right:0;top:4px;width:14px;height:14px;
+  border-top:2px solid var(--accent2);border-right:2px solid var(--accent2);transform:rotate(45deg);
+  box-shadow:0 0 12px color-mix(in srgb,var(--accent2) 70%,transparent);}
+.cal{
+  position:absolute;right:60px;top:20px;width:300px;border-radius:16px;padding:18px;
+  background:linear-gradient(160deg,rgba(20,24,54,.8),rgba(8,8,22,.78));
+}
+.cal .ch{font-family:var(--font-en);font-size:22px;letter-spacing:.2em;color:var(--accent2);text-align:center;margin-bottom:12px;}
+.cal .cg{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;}
+.cal .cg i{height:22px;border-radius:4px;background:rgba(255,255,255,.1);}
+.cal .cg i.mk{background:linear-gradient(160deg,var(--accent),var(--accent2));box-shadow:0 0 14px color-mix(in srgb,var(--accent) 80%,transparent);animation:breathe 4.5s ease-in-out infinite;}
+
+/* =====================================================================
+   スライド 11：スマートフォン
+   ===================================================================== */
+.phone{
+  position:absolute;left:880px;top:56px;width:330px;height:610px;border-radius:44px;padding:12px;
+  background:linear-gradient(160deg,#232842,#0a0c1c);
+  border:2px solid rgba(255,255,255,.2);
+  box-shadow:0 40px 90px rgba(0,0,0,.7),0 0 44px color-mix(in srgb,var(--accent2) 35%,transparent);
+  transform:perspective(1400px) rotateY(-13deg) rotateX(3deg);
+}
+.phone .ring{
+  position:absolute;inset:-34px;border-radius:70px;pointer-events:none;
+  border:2px solid color-mix(in srgb,var(--accent2) 45%,transparent);
+  box-shadow:0 0 40px color-mix(in srgb,var(--accent2) 45%,transparent),inset 0 0 40px color-mix(in srgb,var(--accent) 22%,transparent);
+  animation:breathe 6s ease-in-out infinite;
+}
+.phone .scr{
+  position:relative;height:100%;border-radius:34px;overflow:hidden;background:#04050c;
+}
+.phone .wallp{
+  position:absolute;inset:0;opacity:0;
+  background:
+    radial-gradient(70% 40% at 50% 22%,rgba(255,255,255,.25),transparent 60%),
+    linear-gradient(190deg,#3a1550 0%,#131a44 55%,#06080f 100%);
+}
+.phone .wallp::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:46%;
+  background:repeating-linear-gradient(90deg,rgba(255,214,160,.45) 0 2px,transparent 2px 13px);
+  -webkit-mask-image:linear-gradient(0deg,#000 20%,transparent 90%);
+  mask-image:linear-gradient(0deg,#000 20%,transparent 90%);
+}
+.slide.is-active .phone .wallp{animation:screenOn 1.5s ease-out .55s both;}
+@keyframes screenOn{0%{opacity:0;}25%{opacity:.5;}35%{opacity:.2;}100%{opacity:1;}}
+.phone .lock{position:absolute;left:0;right:0;top:34px;text-align:center;opacity:0;}
+.phone .lock .tm{font-family:var(--font-en);font-size:62px;font-weight:800;line-height:1;text-shadow:0 2px 18px rgba(0,0,0,.7);}
+.phone .lock .dt{font-size:20px;color:#dbe3ff;letter-spacing:.14em;margin-top:6px;}
+.slide.is-active .phone .lock{animation:animFade 1s ease 1.25s both;}
+.phone .duo{position:absolute;left:calc(50% - 98px);bottom:96px;width:196px;height:150px;opacity:0;}
+.slide.is-active .phone .duo{animation:animPop 1.1s var(--e) 1.45s both;}
+.phone .notch{position:absolute;left:50%;top:14px;transform:translateX(-50%);width:110px;height:8px;border-radius:5px;background:#000;opacity:.85;z-index:3;}
+.phone .bar2{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:120px;height:5px;border-radius:3px;background:rgba(255,255,255,.55);z-index:3;}
+
+/* =====================================================================
+   スライド 13：まとめ
+   ===================================================================== */
+.sum{position:absolute;left:0;top:200px;width:1700px;display:flex;gap:20px;}
+.sum .card{
+  flex:1 1 0;height:290px;border-radius:20px;padding:26px 20px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;text-align:center;
+  background:linear-gradient(160deg,rgba(24,26,62,.76),rgba(8,8,22,.7));
+  border:1px solid color-mix(in srgb,var(--accent) 38%,rgba(255,255,255,.12));
+  box-shadow:0 0 26px color-mix(in srgb,var(--accent) 18%,transparent),inset 0 1px 0 rgba(255,255,255,.18),0 18px 40px rgba(0,0,0,.45);
+}
+.sum .card .n{font-family:var(--font-en);font-size:40px;font-weight:900;color:var(--accent2);
+  text-shadow:0 0 16px color-mix(in srgb,var(--accent2) 80%,transparent);letter-spacing:.06em;}
+.sum .card .tx{font-size:31px;font-weight:800;line-height:1.4;}
+.sum-msg{
+  position:absolute;left:0;top:566px;width:1240px;text-align:center;
+}
+.sum-msg .q{
+  font-size:70px;font-weight:900;line-height:1.34;letter-spacing:.01em;
+  background:linear-gradient(96deg,#fff 0%,var(--accent) 46%,var(--accent2) 98%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 26px color-mix(in srgb,var(--accent) 60%,transparent));
+  animation:titleGlow 6.5s ease-in-out infinite;
+}
+.sum-msg .nline{width:520px;margin:26px auto 0;}
+
+/* =====================================================================
+   スライド 14：エンディング
+   ===================================================================== */
+.end-wrap{position:absolute;left:0;top:170px;width:1440px;text-align:center;}
+.end-wrap .big{
+  font-size:88px;font-weight:900;line-height:1.3;
+  text-shadow:0 0 12px rgba(255,255,255,.42),0 0 48px color-mix(in srgb,var(--accent) 55%,transparent),0 8px 30px rgba(0,0,0,.85);
+}
+.end-wrap .sub{margin-top:34px;font-size:38px;font-weight:600;color:#dfe6ff;display:flex;align-items:center;justify-content:center;gap:20px;}
+.end-wrap .sub .ico{width:46px;height:46px;color:var(--accent);}
+.end-sign{position:absolute;left:0;top:560px;width:1440px;display:flex;justify-content:center;}
+.end-sign span{
+  position:relative;padding:18px 46px;border-radius:14px;white-space:nowrap;
+  border:1.5px solid rgba(255,146,200,.6);
+  background:linear-gradient(180deg,rgba(20,6,26,.6),rgba(6,8,20,.5));
+  font-size:44px;font-weight:900;letter-spacing:.08em;color:#fff;
+  text-shadow:0 0 8px #fff,0 0 24px rgba(255,110,185,.95),0 0 50px rgba(53,230,255,.5);
+}
+.end-sign span::after{ /* 文字は常に鮮明なまま、光だけがゆっくり呼吸する */
+  content:"";position:absolute;inset:-2px;border-radius:16px;pointer-events:none;
+  box-shadow:0 0 30px rgba(255,79,163,.5),0 0 64px rgba(53,230,255,.28);
+  animation:logoBreath 6.4s ease-in-out infinite;
+}
+.end-couple{left:20px;bottom:0;height:360px;}
+.s12-couple{left:120px;bottom:0;height:360px;opacity:.45;}
+</style>
+</head>
+<body>
+<!-- ===== アイコン・シルエットのスプライト（重複記述を避けるため <use> で再利用） ===== -->
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3.5 11.5h17V20a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/><rect x="2" y="7.2" width="20" height="4.3" rx="1"/>
+    <path d="M12 7.2V21"/><path d="M12 7.2S10.6 3.2 8.2 3.2a2.4 2.4 0 0 0 0 4.8"/><path d="M12 7.2s1.4-4 3.8-4a2.4 2.4 0 0 1 0 4.8"/>
+  </symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12.2a8 8 0 0 1-8 8H7.4L3.4 23v-6.2A8 8 0 1 1 21 12.2z"/><path d="M8.4 10.6h7.2M8.4 14.2h4.2"/>
+  </symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 20.6S3.4 15.2 3.4 9.4A4.9 4.9 0 0 1 12 6.2a4.9 4.9 0 0 1 8.6 3.2c0 5.8-8.6 11.2-8.6 11.2z"/>
+  </symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2.6" y="6.2" width="18.8" height="14.6" rx="2.4"/><circle cx="12" cy="13.5" r="3.7"/><path d="M8.2 6.2 9.8 3.4h4.4l1.6 2.8"/>
+  </symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="6.4" y="2.4" width="11.2" height="19.2" rx="2.6"/><path d="M10.4 5.1h3.2"/><path d="M12 18.6h.01"/>
+  </symbol>
+  <symbol id="i-bubble" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20.5 11.5c0 4.3-3.8 7.7-8.5 7.7-1 0-2-.2-2.9-.5L4 20.4l1.4-3.7a7.4 7.4 0 0 1-1.9-5.2C3.5 7.2 7.3 3.8 12 3.8s8.5 3.4 8.5 7.7z"/>
+  </symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 5l7 7-7 7"/>
+  </symbol>
+  <!-- 寄り添うカップルのシルエット -->
+  <symbol id="i-couple" viewBox="0 0 300 320">
+    <ellipse cx="112" cy="54" rx="25" ry="27"/>
+    <path d="M112 80c-23 0-36 17-40 42l-12 74c-2 10 4 16 13 16l4 96c0 7 5 12 12 12h42c7 0 12-5 12-12l6-96c9 0 15-6 13-16l-12-74c-4-25-15-42-38-42z"/>
+    <ellipse cx="198" cy="42" rx="27" ry="29"/>
+    <path d="M198 70c-26 0-40 19-44 46l-13 78c-2 10 5 17 14 17l4 99c0 7 5 12 12 12h46c7 0 12-5 12-12l4-99c9 0 16-7 14-17l-13-78c-4-27-18-46-44-46z"/>
+  </symbol>
+  <!-- 驚いて喜ぶ人のシルエット -->
+  <symbol id="i-joy" viewBox="0 0 180 320">
+    <ellipse cx="92" cy="50" rx="25" ry="27"/>
+    <path d="M92 76c-24 0-38 18-42 44l-6 40c-1 8 4 13 11 13l3 133c0 7 5 12 12 12h44c7 0 12-5 12-12l3-133c7 0 12-5 11-13l-6-40c-4-26-18-44-42-44z"/>
+    <path d="M50 122 16 44c-3-7-11-9-16-5s-6 12-3 18l38 84z"/>
+    <path d="M134 122 168 44c3-7 11-9 16-5s6 12 3 18l-38 84z"/>
+  </symbol>
+</svg>
+
+<div id="app">
+<div id="stage">
+
+  <!-- ============================================================
+       常時アニメーションする背景（スライドを跨いで停止しない）
+       ============================================================ -->
+  <div class="amb" id="amb">
+    <div class="amb-grad"></div>
+
+    <div class="cityscape">
+      <div class="city city-far"><div class="city-win"></div></div>
+      <div class="city city-near"><div class="city-win"></div></div>
+      <div class="horizon"></div>
+    </div>
+
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="orb orb-c"></div>
+
+    <div class="fog fog-1"></div>
+    <div class="fog fog-2"></div>
+
+    <!-- 漂う光の粒（固定18個） -->
+    <div class="dust">
+      <i style="--x:5%;--s:5px;--dur:30s;--dl:-2s;--dx:70px"></i>
+      <i style="--x:12%;--s:3px;--dur:38s;--dl:-14s;--dx:-40px"></i>
+      <i style="--x:19%;--s:6px;--dur:26s;--dl:-8s;--dx:50px"></i>
+      <i style="--x:26%;--s:4px;--dur:34s;--dl:-21s;--dx:-64px"></i>
+      <i style="--x:33%;--s:3px;--dur:29s;--dl:-5s;--dx:36px"></i>
+      <i style="--x:40%;--s:7px;--dur:41s;--dl:-27s;--dx:-30px"></i>
+      <i style="--x:47%;--s:4px;--dur:32s;--dl:-11s;--dx:58px"></i>
+      <i style="--x:54%;--s:5px;--dur:36s;--dl:-19s;--dx:-52px"></i>
+      <i style="--x:61%;--s:3px;--dur:28s;--dl:-3s;--dx:44px"></i>
+      <i style="--x:68%;--s:6px;--dur:39s;--dl:-24s;--dx:-38px"></i>
+      <i style="--x:74%;--s:4px;--dur:31s;--dl:-16s;--dx:62px"></i>
+      <i style="--x:80%;--s:5px;--dur:35s;--dl:-9s;--dx:-46px"></i>
+      <i style="--x:86%;--s:3px;--dur:27s;--dl:-30s;--dx:34px"></i>
+      <i style="--x:91%;--s:6px;--dur:40s;--dl:-6s;--dx:-56px"></i>
+      <i style="--x:96%;--s:4px;--dur:33s;--dl:-18s;--dx:48px"></i>
+      <i style="--x:23%;--s:5px;--dur:44s;--dl:-33s;--dx:-70px"></i>
+      <i style="--x:57%;--s:3px;--dur:37s;--dl:-12s;--dx:66px"></i>
+      <i style="--x:88%;--s:5px;--dur:42s;--dl:-25s;--dx:-42px"></i>
+    </div>
+
+    <!-- 遠くを漂うハート型のボケ（固定6個） -->
+    <div class="hearts">
+      <i style="--x:9%;--s:56px;--dur:64s;--dl:-6s;--dx:80px"></i>
+      <i style="--x:31%;--s:34px;--dur:78s;--dl:-40s;--dx:-60px"></i>
+      <i style="--x:52%;--s:70px;--dur:88s;--dl:-22s;--dx:52px"></i>
+      <i style="--x:71%;--s:40px;--dur:72s;--dl:-55s;--dx:-74px"></i>
+      <i style="--x:84%;--s:60px;--dur:96s;--dl:-14s;--dx:44px"></i>
+      <i style="--x:44%;--s:28px;--dur:68s;--dl:-33s;--dx:-38px"></i>
+    </div>
+
+    <!-- ゆっくり移動する細い光の線 -->
+    <div class="streaks">
+      <i style="--y:22%;--dur:26s;--dl:-4s"></i>
+      <i style="--y:58%;--dur:34s;--dl:-19s"></i>
+      <i style="--y:81%;--dur:30s;--dl:-11s"></i>
+    </div>
+
+    <div class="sheen"></div>
+    <div class="grain"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <!-- ============================================================
+       スライド本体
+       ============================================================ -->
+  <main id="deck">
+
+  <!-- ========== SLIDE 1 : オープニング ========== -->
+  <section class="slide" data-accent="var(--pink)" data-accent2="var(--cyan)">
+    <div class="photo" data-photo="opening"></div>
+    <div class="wrap">
+      <div class="sil rim s1-couple"><svg viewBox="0 0 300 320"><use href="#i-couple"/></svg></div>
+      <div class="s1-rail"></div>
+      <div class="glass s1-panel">
+        <div class="kicker" data-anim="left" style="--d:.10s">PHILIPPINE NIGHT RADIO&nbsp;&nbsp;2nd</div>
+        <h1 class="t1">
+          <span data-anim="up" style="--d:.24s">【フィリピン恋愛】</span>
+          <span data-anim="up" style="--d:.38s">気になる子や彼女にすると</span>
+          <span data-anim="up" style="--d:.52s"><em>喜ばれる5つの事</em></span>
+        </h1>
+        <div class="nline" data-anim="line" style="--d:.70s"></div>
+        <p class="lead" data-anim="up" style="--d:.86s">「大げさなプレゼントより、毎日の小さな愛情表現。」</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 2 : 今回紹介する5つ ========== -->
+  <section class="slide" data-accent="var(--purple)" data-accent2="var(--cyan)">
+    <div class="photo" data-photo="list"></div>
+    <div class="wrap">
+      <h2 class="sec-title" data-anim="left" style="--d:.10s">喜ばれやすい<span class="hl">5つ</span>の行動</h2>
+      <div class="ghost5" data-anim="fade" style="--d:.55s">
+        <b>5</b>
+        <div class="bars">
+          <i style="--dl:0s"></i><i style="--dl:-.4s"></i><i style="--dl:-.8s"></i>
+          <i style="--dl:-1.2s"></i><i style="--dl:-1.6s"></i><i style="--dl:-2s"></i><i style="--dl:-2.4s"></i>
+        </div>
+      </div>
+      <div class="list5">
+        <div class="item5" data-anim="up" style="--d:.30s;--fd:0s">
+          <span class="n">01</span><span class="tx">サプライズ</span>
+          <span class="ico"><svg><use href="#i-gift"/></svg></span>
+        </div>
+        <div class="item5" data-anim="up" style="--d:.42s;--fd:-1.4s">
+          <span class="n">02</span><span class="tx">こまめに連絡する</span>
+          <span class="ico"><svg><use href="#i-chat"/></svg></span>
+        </div>
+        <div class="item5" data-anim="up" style="--d:.54s;--fd:-2.8s">
+          <span class="n">03</span><span class="tx">言葉で愛情を伝える</span>
+          <span class="ico"><svg><use href="#i-heart"/></svg></span>
+        </div>
+        <div class="item5" data-anim="up" style="--d:.66s;--fd:-4.2s">
+          <span class="n">04</span><span class="tx">特別な日のメモリー</span>
+          <span class="ico"><svg><use href="#i-photo"/></svg></span>
+        </div>
+        <div class="item5" data-anim="up" style="--d:.78s;--fd:-5.6s">
+          <span class="n">05</span><span class="tx">スマホ画面を相手の写真にする</span>
+          <span class="ico"><svg><use href="#i-phone"/></svg></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 3 : 1つ目 サプライズ ========== -->
+  <section class="slide" data-accent="var(--pink)" data-accent2="var(--gold)">
+    <div class="photo" data-photo="surprise"></div>
+    <div class="wrap">
+      <!-- 先にプレゼントボックスが光り、その後にタイトルが出る -->
+      <div class="gift" data-anim="pop" style="--d:.05s">
+        <div class="halo"></div>
+        <div class="box"></div>
+        <div class="lid"></div>
+        <div class="ribbon"></div>
+        <div class="bow"></div>
+        <div class="spark" style="left:20px;top:80px;--dl:-.2s"></div>
+        <div class="spark" style="left:370px;top:150px;--dl:-1.1s"></div>
+        <div class="spark" style="left:300px;top:40px;--dl:-2s"></div>
+        <div class="spark" style="left:60px;top:330px;--dl:-1.6s"></div>
+      </div>
+      <div class="sil rim s3-sil"><svg viewBox="0 0 180 320"><use href="#i-joy"/></svg></div>
+      <div class="lead-col">
+        <div class="num-big" data-anim="left" style="--d:.42s">01</div>
+        <h2 class="item-title" data-anim="left" style="--d:.56s">サプライズ</h2>
+        <div class="nline" data-anim="line" style="--d:.70s"></div>
+        <p class="emph" data-anim="up" style="--d:.84s">「高価な物より、<span class="hl-p">突然の小さな気遣い</span>。」</p>
+        <div class="chips">
+          <div class="chip" data-anim="up" style="--d:.98s">好きな食べ物を突然買ってくる</div>
+          <div class="chip" data-anim="up" style="--d:1.08s">小さなプレゼントを渡す</div>
+          <div class="chip" data-anim="up" style="--d:1.18s">予定していなかったデートへ連れていく</div>
+          <div class="chip" data-anim="up" style="--d:1.28s">花やメッセージを用意する</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 4 : サプライズのポイント ========== -->
+  <section class="slide" data-accent="var(--magenta)" data-accent2="var(--purple)">
+    <div class="photo" data-photo="surprise2"></div>
+    <div class="wrap">
+      <h2 class="sec-title" data-anim="left" style="--d:.10s">サプライズは<span class="hl">金額ではない</span></h2>
+      <div class="cards3">
+        <div class="glass neon-edge card3" data-anim="up" style="--d:.34s;--fd:0s">
+          <div class="cw">覚えていて<br>くれた</div>
+          <div class="glowline"></div>
+          <div class="cs">MEMORY</div>
+        </div>
+        <div class="glass neon-edge card3 big" data-anim="up" style="--d:.48s;--fd:-2.6s">
+          <div class="cw">考えて<br>くれた</div>
+          <div class="glowline"></div>
+          <div class="cs">THOUGHT</div>
+        </div>
+        <div class="glass neon-edge card3" data-anim="up" style="--d:.62s;--fd:-5.2s">
+          <div class="cw">準備して<br>くれた</div>
+          <div class="glowline"></div>
+          <div class="cs">EFFORT</div>
+        </div>
+      </div>
+      <p class="foot-msg" data-anim="up" style="--d:.86s">「自分のために<span class="hl">時間を使ってくれたこと</span>が嬉しい。」</p>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 5 : 2つ目 こまめに連絡する ========== -->
+  <section class="slide" data-accent="var(--cyan)" data-accent2="var(--blue)">
+    <div class="photo" data-photo="chat"></div>
+    <div class="wrap">
+      <div class="lead-col">
+        <div class="num-big" data-anim="left" style="--d:.14s">02</div>
+        <h2 class="item-title" data-anim="left" style="--d:.28s">こまめに連絡する</h2>
+        <div class="nline" data-anim="line" style="--d:.42s"></div>
+        <p class="emph" data-anim="up" style="--d:.56s">「用事がなくても、<br>連絡があると<span class="hl">安心する</span>。」</p>
+        <p class="note" data-anim="up" style="--d:.72s">長さより回数。ひとことで十分。</p>
+      </div>
+      <!-- 独自デザインのチャットパネル（実在サービスのUIは模倣しない） -->
+      <div class="glass chat" data-anim="right" style="--d:.30s">
+        <div class="head">
+          <span class="av"></span>
+          <span class="nm">MY LOVE</span>
+          <span class="st">ONLINE</span>
+        </div>
+        <div class="body">
+          <div class="bub out" style="--d:.55s">おはよう</div>
+          <div class="read" style="--d:.95s">既読</div>
+          <div class="bub in"  style="--d:.85s">今何してる？</div>
+          <div class="bub out" style="--d:1.15s">ご飯食べた？</div>
+          <div class="read" style="--d:1.55s">既読</div>
+          <div class="bub in"  style="--d:1.45s">無事に着いた？</div>
+          <div class="bub out" style="--d:1.75s">おやすみ</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 6 : 連絡で大切なこと ========== -->
+  <section class="slide" data-accent="var(--purple)" data-accent2="var(--blue)">
+    <div class="photo" data-photo="chat2"></div>
+    <div class="wrap">
+      <h2 class="sec-title" data-anim="left" style="--d:.10s">長文より、<span class="hl">安心できる一言</span></h2>
+      <div class="compare">
+        <div class="cmp cmp-bad" data-anim="left" style="--d:.34s">
+          <h3><span class="badge">…</span>避けたい例</h3>
+          <ul>
+            <li data-anim="up" style="--d:.54s">何時間も突然消える</li>
+            <li data-anim="up" style="--d:.64s">返信をわざと遅らせる</li>
+            <li data-anim="up" style="--d:.74s">相手から来るまで連絡しない</li>
+          </ul>
+        </div>
+        <div class="cmp cmp-good" data-anim="right" style="--d:.44s">
+          <h3><span class="badge">♡</span>喜ばれる例</h3>
+          <ul>
+            <li data-anim="up" style="--d:.64s">忙しくなる前に伝える</li>
+            <li data-anim="up" style="--d:.74s">帰宅したら一言送る</li>
+            <li data-anim="up" style="--d:.84s">短くても毎日連絡する</li>
+          </ul>
+        </div>
+      </div>
+      <p class="foot-msg" data-anim="up" style="--d:1.0s">「今どこにいるか」より「<span class="hl">気にかけている</span>」が伝わればいい。</p>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 7 : 3つ目 言葉で愛情を伝える ========== -->
+  <section class="slide" data-accent="var(--magenta)" data-accent2="var(--cyan)">
+    <div class="photo" data-photo="words"></div>
+    <div class="wrap">
+      <div class="sil rim" style="left:640px;bottom:0;height:330px;opacity:.55">
+        <svg viewBox="0 0 300 320"><use href="#i-couple"/></svg>
+      </div>
+      <div class="lead-col">
+        <div class="num-big" data-anim="left" style="--d:.14s">03</div>
+        <h2 class="item-title" data-anim="left" style="--d:.28s">言葉で愛情を伝える</h2>
+        <div class="nline" data-anim="line" style="--d:.42s"></div>
+        <p class="emph" data-anim="up" style="--d:.56s">「思っているだけでは<span class="hl">伝わらない</span>。」</p>
+      </div>
+      <!-- 順番に発光し、最後は全部が同時に見える -->
+      <div class="signs">
+        <div class="sign en" style="--d:.55s">I love you</div>
+        <div class="sign en" style="--d:.85s">I miss you</div>
+        <div class="sign"    style="--d:1.15s">かわいい</div>
+        <div class="sign"    style="--d:1.45s">大切に思ってる</div>
+        <div class="sign"    style="--d:1.75s">会えて嬉しい</div>
+      </div>
+      <!-- 自動でゆっくり動く音声波形 -->
+      <div class="wave" data-anim="fade" style="--d:.9s">
+        <i style="--dl:0s"></i><i style="--dl:-.18s"></i><i style="--dl:-.36s"></i><i style="--dl:-.54s"></i>
+        <i style="--dl:-.72s"></i><i style="--dl:-.9s"></i><i style="--dl:-1.08s"></i><i style="--dl:-1.26s"></i>
+        <i style="--dl:-1.44s"></i><i style="--dl:-1.62s"></i><i style="--dl:-1.8s"></i><i style="--dl:-1.98s"></i>
+        <i style="--dl:-2.16s"></i><i style="--dl:-2.34s"></i><i style="--dl:-2.52s"></i><i style="--dl:-2.7s"></i>
+        <i style="--dl:-.42s"></i><i style="--dl:-1.02s"></i><i style="--dl:-1.68s"></i><i style="--dl:-2.28s"></i>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 8 : 愛情表現のポイント ========== -->
+  <section class="slide" data-accent="var(--pink)" data-accent2="var(--purple)">
+    <div class="photo" data-photo="studio"></div>
+    <div class="wrap">
+      <h2 class="sec-title" data-anim="left" style="--d:.10s">恥ずかしがらずに<span class="hl">言葉にする</span></h2>
+      <div class="mic" data-anim="fade" style="--d:.5s">
+        <div class="cap"><div class="grid"></div></div>
+        <div class="arc"></div><div class="stem"></div><div class="base"></div>
+      </div>
+      <div class="onair" data-anim="pop" style="--d:.7s">ON AIR</div>
+      <!-- すべて常に読める状態のまま、発光の強さだけが順番に変化する -->
+      <div class="cluster">
+        <span class="word w1" data-anim="pop" style="--d:.34s;--dl:0s">好き</span>
+        <span class="word w2" data-anim="pop" style="--d:.46s;--dl:-1.1s">ありがとう</span>
+        <span class="word w2" data-anim="pop" style="--d:.58s;--dl:-2.2s">会いたい</span>
+        <span class="word w3" data-anim="pop" style="--d:.70s;--dl:-3.3s">心配してる</span>
+        <span class="word w3" data-anim="pop" style="--d:.82s;--dl:-4.4s">ずっと一緒にいたい</span>
+      </div>
+      <p class="foot-msg" data-anim="up" style="--d:1.0s">「何度伝えても、<span class="hl">愛情の言葉は嬉しい</span>。」</p>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 9 : 4つ目 特別な日のメモリー ========== -->
+  <section class="slide" data-accent="var(--gold)" data-accent2="var(--pink)">
+    <div class="photo" data-photo="memory"></div>
+    <div class="wrap">
+      <div class="lead-col">
+        <div class="num-big" data-anim="left" style="--d:.14s">04</div>
+        <h2 class="item-title" data-anim="left" style="--d:.28s">特別な日のメモリー</h2>
+        <div class="nline" data-anim="line" style="--d:.42s"></div>
+        <p class="emph" data-anim="up" style="--d:.56s">「記念日を、<span class="hl-p">一緒に残す</span>。」</p>
+        <div class="chips two">
+          <div class="chip" data-anim="up" style="--d:.72s">誕生日</div>
+          <div class="chip" data-anim="up" style="--d:.80s">交際記念日</div>
+          <div class="chip" data-anim="up" style="--d:.88s">初めて会った日</div>
+          <div class="chip" data-anim="up" style="--d:.96s">初めて旅行した場所</div>
+          <div class="chip" data-anim="up" style="--d:1.04s">クリスマスやバレンタイン</div>
+          <div class="chip" data-anim="up" style="--d:1.12s">二人だけの特別な日</div>
+        </div>
+      </div>
+      <!-- 机の上に順番に置かれるように現れるポラロイド -->
+      <div class="polas">
+        <div class="pola" style="left:10px;top:16px;--rot:-7deg;--d:.40s"><div class="pic" style="--c1:#3a1550;--c2:#0b1c3d"></div><div class="cap">FIRST DATE</div></div>
+        <div class="pola" style="left:296px;top:0;--rot:5deg;--d:.58s"><div class="pic" style="--c1:#511a3a;--c2:#101a44"></div><div class="cap">BIRTHDAY</div></div>
+        <div class="pola" style="left:576px;top:38px;--rot:-3deg;--d:.76s"><div class="pic" style="--c1:#1b2a5e;--c2:#2b0f3a"></div><div class="cap">ANNIVERSARY</div></div>
+        <div class="pola" style="left:120px;top:250px;--rot:6deg;--d:.94s"><div class="pic" style="--c1:#432052;--c2:#08182e"></div><div class="cap">TRIP</div></div>
+        <div class="pola" style="left:398px;top:236px;--rot:-5deg;--d:1.12s"><div class="pic" style="--c1:#2a1247;--c2:#3d1030"></div><div class="cap">CHRISTMAS</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 10 : 思い出の残し方 ========== -->
+  <section class="slide" data-accent="var(--cyan)" data-accent2="var(--pink)">
+    <div class="photo" data-photo="memory2"></div>
+    <div class="wrap">
+      <h2 class="sec-title" data-anim="left" style="--d:.10s">写真だけで<span class="hl">終わらせない</span></h2>
+      <!-- カレンダーの日付に小さなハート -->
+      <div class="glass cal" data-anim="right" style="--d:.40s">
+        <div class="ch">ANNIVERSARY</div>
+        <div class="cg">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          <i></i><i></i><i class="mk"></i><i></i><i></i><i></i><i></i>
+          <i></i><i></i><i></i><i></i><i></i><i class="mk"></i><i></i>
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+      </div>
+      <div class="flow">
+        <div class="glass neon-edge step" data-anim="up" style="--d:.32s;--fd:0s">
+          <span class="sn">STEP 01</span><span class="sw">撮る</span>
+        </div>
+        <span class="arrow" data-anim="fade" style="--d:.44s"></span>
+        <div class="glass neon-edge step" data-anim="up" style="--d:.46s;--fd:-1.8s">
+          <span class="sn">STEP 02</span><span class="sw">保存する</span>
+        </div>
+        <span class="arrow" data-anim="fade" style="--d:.58s"></span>
+        <div class="glass neon-edge step" data-anim="up" style="--d:.60s;--fd:-3.6s">
+          <span class="sn">STEP 03</span><span class="sw">振り返る</span>
+        </div>
+        <span class="arrow" data-anim="fade" style="--d:.72s"></span>
+        <div class="glass neon-edge step" data-anim="up" style="--d:.74s;--fd:-5.4s">
+          <span class="sn">STEP 04</span><span class="sw">また一緒に行く</span>
+        </div>
+      </div>
+      <p class="foot-msg" data-anim="up" style="--d:.94s">「二人の歴史を<span class="hl">大切にしていること</span>が伝わる。」</p>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 11 : 5つ目 スマホ画面を相手の写真にする ========== -->
+  <section class="slide" data-accent="var(--blue)" data-accent2="var(--cyan)">
+    <div class="photo" data-photo="phone"></div>
+    <div class="wrap">
+      <div class="lead-col tight">
+        <div class="num-big" data-anim="left" style="--d:.14s">05</div>
+        <h2 class="item-title" data-anim="left" style="--d:.28s">スマホ画面を<br>相手の写真にする</h2>
+        <div class="nline" data-anim="line" style="--d:.42s"></div>
+        <p class="emph" data-anim="up" style="--d:.56s">「いつでも見える場所に、<span class="hl">自分がいる</span>。」</p>
+        <div class="chips two">
+          <div class="chip" data-anim="up" style="--d:.72s">ロック画面</div>
+          <div class="chip" data-anim="up" style="--d:.80s">ホーム画面</div>
+          <div class="chip" data-anim="up" style="--d:.88s">二人の写真</div>
+          <div class="chip" data-anim="up" style="--d:.96s">相手のお気に入り写真</div>
+          <div class="chip" data-anim="up" style="--d:1.04s">記念日に撮った写真</div>
+        </div>
+      </div>
+      <!-- 暗い画面 → 点灯 → 写真が表示される（端末メーカーのロゴは一切使用しない） -->
+      <div class="phone" data-anim="fade" style="--d:.20s">
+        <div class="ring"></div>
+        <div class="scr">
+          <div class="notch"></div>
+          <div class="wallp"></div>
+          <div class="lock">
+            <div class="tm">22:45</div>
+            <div class="dt">FRIDAY, MANILA</div>
+          </div>
+          <div class="sil duo" style="position:absolute"><svg viewBox="0 0 300 320"><use href="#i-couple"/></svg></div>
+          <div class="bar2"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 12 : なぜ嬉しいのか ========== -->
+  <section class="slide" data-accent="var(--purple)" data-accent2="var(--pink)">
+    <div class="photo" data-photo="why"></div>
+    <div class="wrap">
+      <div class="sil rim s12-couple"><svg viewBox="0 0 300 320"><use href="#i-couple"/></svg></div>
+      <h2 class="sec-title" data-anim="left" style="--d:.10s">恋人として<span class="hl">認められている安心感</span></h2>
+      <div class="cards3">
+        <div class="glass neon-edge card3" data-anim="up" style="--d:.34s;--fd:0s">
+          <div class="cw">隠されて<br>いない</div>
+          <div class="glowline"></div>
+          <div class="cs">OPEN</div>
+        </div>
+        <div class="glass neon-edge card3 big" data-anim="up" style="--d:.48s;--fd:-2.6s">
+          <div class="cw">大切に<br>されている</div>
+          <div class="glowline"></div>
+          <div class="cs">PRECIOUS</div>
+        </div>
+        <div class="glass neon-edge card3" data-anim="up" style="--d:.62s;--fd:-5.2s">
+          <div class="cw">自分を選んで<br>くれている</div>
+          <div class="glowline"></div>
+          <div class="cs">CHOSEN</div>
+        </div>
+      </div>
+      <p class="foot-msg" data-anim="up" style="--d:.86s">「小さな行動でも、相手にとっては<span class="hl">大きな安心</span>になる。」</p>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 13 : まとめ ========== -->
+  <section class="slide" data-accent="var(--pink)" data-accent2="var(--cyan)">
+    <div class="photo" data-photo="summary"></div>
+    <div class="wrap">
+      <h2 class="sec-title" data-anim="left" style="--d:.10s">フィリピン恋愛で<span class="hl">喜ばれる5つの事</span></h2>
+      <div class="sum">
+        <div class="card" data-anim="up" style="--d:.30s;--fd:0s">
+          <span class="ico"><svg><use href="#i-gift"/></svg></span>
+          <span class="n">01</span><span class="tx">小さな<br>サプライズ</span>
+        </div>
+        <div class="card" data-anim="up" style="--d:.40s;--fd:-1.6s">
+          <span class="ico"><svg><use href="#i-chat"/></svg></span>
+          <span class="n">02</span><span class="tx">こまめな<br>連絡</span>
+        </div>
+        <div class="card" data-anim="up" style="--d:.50s;--fd:-3.2s">
+          <span class="ico"><svg><use href="#i-heart"/></svg></span>
+          <span class="n">03</span><span class="tx">言葉で伝える<br>愛情</span>
+        </div>
+        <div class="card" data-anim="up" style="--d:.60s;--fd:-4.8s">
+          <span class="ico"><svg><use href="#i-photo"/></svg></span>
+          <span class="n">04</span><span class="tx">二人の思い出を<br>残す</span>
+        </div>
+        <div class="card" data-anim="up" style="--d:.70s;--fd:-6.4s">
+          <span class="ico"><svg><use href="#i-phone"/></svg></span>
+          <span class="n">05</span><span class="tx">スマホ画面を<br>相手の写真に</span>
+        </div>
+      </div>
+      <div class="sum-msg">
+        <div class="q" data-anim="up" style="--d:.92s">大切なのは、<br>お金よりも愛情が見えること。</div>
+        <div class="nline" data-anim="line" style="--d:1.12s"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SLIDE 14 : エンディング（操作するまで表示し続ける） ========== -->
+  <section class="slide" data-accent="var(--cyan)" data-accent2="var(--pink)">
+    <div class="photo" data-photo="ending"></div>
+    <div class="wrap">
+      <div class="sil rim end-couple"><svg viewBox="0 0 300 320"><use href="#i-couple"/></svg></div>
+      <div class="end-wrap">
+        <div class="big" data-anim="up" style="--d:.22s">あなたが相手のために<br>していることは？</div>
+        <div class="sub" data-anim="up" style="--d:.52s">
+          <span class="ico"><svg><use href="#i-bubble"/></svg></span>
+          コメントで教えてください。
+        </div>
+      </div>
+      <div class="end-sign" data-anim="pop" style="--d:.80s"><span>フィリピン夜のラジオ2nd</span></div>
+    </div>
+  </section>
+
+  </main>
+
+  <!-- ===== 固定ロゴ（全スライド共通・右上） ===== -->
+  <div class="logo"><span>フィリピン夜のラジオ2nd</span></div>
+
+  <!-- ===== 切り替え演出用 ===== -->
+  <div class="dim" id="dim"></div>
+  <div class="sweep" id="sweep"></div>
+
+  <!-- ===== ワイプ（出演者映像）用セーフゾーン：W キーで枠を表示 ===== -->
+  <div class="wipe-guide"><span>ワイプ</span></div>
+
+  <!-- ===== 進行状況 & 操作ヒント ===== -->
+  <div class="hud">
+    <div class="hint">
+      <div class="l1">←&nbsp;前へ　→&nbsp;次へ　F&nbsp;フルスクリーン</div>
+      <div class="l2">Space 次へ　Home 最初へ　End 最後へ　1〜9 ジャンプ　W ワイプ枠</div>
+    </div>
+    <div class="prog">
+      <div class="dots" id="dots">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <div class="count"><b id="cur">01</b> / 14</div>
+    </div>
+    <div class="bar"><i id="barFill"></i></div>
+  </div>
+
+</div><!-- /#stage -->
+
+<!-- ===== 画面左右のクリック領域（普段はほぼ透明・近づくと矢印） ===== -->
+<button class="edge edge-l" id="edgeL" type="button" aria-label="前のスライドへ"><svg style="transform:rotate(180deg)"><use href="#i-arrow"/></svg></button>
+<button class="edge edge-r" id="edgeR" type="button" aria-label="次のスライドへ"><svg><use href="#i-arrow"/></svg></button>
+
+</div><!-- /#app -->
+
+<script>
+/* =====================================================================
+   ■ 画像URL一覧（差し替えはここだけでOK）
+     ・空文字 "" のままなら CSS のネオン背景がそのまま使われます
+     ・URL を入れると背景写真になり、読み込みに失敗した場合は
+       自動的にネオン背景へ戻ります（画像の上には常に暗い幕が乗ります）
+   ===================================================================== */
+var IMAGES = {
+  opening  : "",   /* 1  オープニング（夜景・バーのテラス） */
+  list     : "",   /* 2  5つの一覧 */
+  surprise : "",   /* 3  サプライズ（花束・プレゼント） */
+  surprise2: "",   /* 4  サプライズのポイント（カフェ・花） */
+  chat     : "",   /* 5  こまめに連絡（夜の街とスマホ） */
+  chat2    : "",   /* 6  連絡で大切なこと */
+  words    : "",   /* 7  言葉で愛情を伝える（会話するカップル） */
+  studio   : "",   /* 8  愛情表現のポイント（ラジオスタジオ） */
+  memory   : "",   /* 9  特別な日のメモリー（写真アルバム） */
+  memory2  : "",   /* 10 思い出の残し方 */
+  phone    : "",   /* 11 スマホ画面 */
+  why      : "",   /* 12 なぜ嬉しいのか（夜の街を歩く二人） */
+  summary  : "",   /* 13 まとめ */
+  ending   : ""    /* 14 エンディング（夜景を見る二人の後ろ姿） */
+};
+
+(function () {
+  'use strict';
+
+  var app    = document.getElementById('app');
+  var stage  = document.getElementById('stage');
+  var deck   = document.getElementById('deck');
+  var slides = Array.prototype.slice.call(deck.getElementsByClassName('slide'));
+  var total  = slides.length;
+  var dots   = Array.prototype.slice.call(document.getElementById('dots').getElementsByTagName('i'));
+  var curEl  = document.getElementById('cur');
+  var barEl  = document.getElementById('barFill');
+  var sweep  = document.getElementById('sweep');
+  var dim    = document.getElementById('dim');
+  var amb    = document.getElementById('amb');
+
+  var index      = -1;   /* 現在のスライド番号（0 始まり） */
+  var lastNav    = 0;    /* 連打・長押し対策 */
+  var leaveTimer = 0;
+  var idleTimer  = 0;
+  var NAV_LOCK   = 420;  /* ms：この間隔より速い操作は無視する */
+
+  /* ---------- 1920×1080 のステージを画面サイズへフィット ---------- */
+  function fit() {
+    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    if (!isFinite(s) || s <= 0) { s = 1; }
+    stage.style.setProperty('--scale', s);
+  }
+
+  /* ---------- アニメーションの再スタート ---------- */
+  function retrigger(el, cls) {
+    if (!el) { return; }
+    el.classList.remove(cls);
+    void el.offsetWidth;          /* 強制的にスタイルを再計算して再生し直す */
+    el.classList.add(cls);
+  }
+
+  /* ---------- スライド表示 ---------- */
+  function apply(i, dir, silent) {
+    var prev = index;
+    index = i;
+
+    for (var k = 0; k < total; k++) {
+      if (k === index) { continue; }
+      slides[k].classList.remove('is-active');
+      if (k !== prev) { slides[k].classList.remove('is-leaving'); }
+    }
+    if (prev >= 0 && prev !== index) {
+      slides[prev].classList.add('is-leaving');
+      clearTimeout(leaveTimer);
+      leaveTimer = setTimeout(function () {
+        for (var n = 0; n < total; n++) {
+          if (n !== index) { slides[n].classList.remove('is-leaving'); }
+        }
+      }, 1300);
+    }
+
+    deck.classList.toggle('dir-prev', dir < 0);
+    slides[index].classList.add('is-active');
+
+    /* スライドごとのアクセントカラー（背景・ネオンが滑らかに変化する） */
+    var a1 = slides[index].getAttribute('data-accent');
+    var a2 = slides[index].getAttribute('data-accent2');
+    if (a1) { stage.style.setProperty('--accent', a1); }
+    if (a2) { stage.style.setProperty('--accent2', a2); }
+
+    /* 進行状況 */
+    for (var d = 0; d < dots.length; d++) {
+      dots[d].classList.toggle('on', d === index);
+    }
+    curEl.textContent = (index + 1 < 10 ? '0' : '') + (index + 1);
+    barEl.style.width = ((index + 1) / total * 100) + '%';
+
+    /* 切り替え演出（初回表示では鳴らさない） */
+    if (!silent) {
+      retrigger(sweep, 'run');
+      retrigger(dim, 'run');
+      amb.style.setProperty('--sx', dir < 0 ? '-26px' : '26px');
+      retrigger(amb, 'shift');
+    }
+  }
+
+  /* ---------- 移動（範囲外・端での折り返しは行わない） ---------- */
+  function nav(i, dir) {
+    var now = Date.now();
+    if (now - lastNav < NAV_LOCK) { return; }
+    i = Math.floor(i);
+    if (isNaN(i)) { return; }
+    if (i < 0) { i = 0; }
+    if (i > total - 1) { i = total - 1; }
+    if (i === index) { return; }        /* 最初／最後で押しても何も起きない */
+    lastNav = now;
+    apply(i, dir || (i > index ? 1 : -1), false);
+  }
+  function next() { nav(index + 1, 1); }
+  function prev() { nav(index - 1, -1); }
+
+  /* ---------- フルスクリーン ---------- */
+  function toggleFull() {
+    try {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        var p = document.documentElement.requestFullscreen();
+        if (p && p.catch) { p.catch(function () {}); }
+      }
+    } catch (err) { /* 非対応環境では何もしない */ }
+  }
+
+  /* ---------- 一定時間操作がなければ UI を薄くする ---------- */
+  function wake() {
+    app.classList.remove('idle');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(function () { app.classList.add('idle'); }, 3400);
+  }
+
+  /* ---------- キーボード（最優先で登録する） ---------- */
+  document.addEventListener('keydown', function (e) {
+    var k = e.key;
+    wake();
+    if (k === 'ArrowRight' || k === ' ' || k === 'Spacebar' || k === 'PageDown') { e.preventDefault(); next(); return; }
+    if (k === 'ArrowLeft'  || k === 'PageUp')   { e.preventDefault(); prev(); return; }
+    if (k === 'Home')  { e.preventDefault(); nav(0, -1); return; }
+    if (k === 'End')   { e.preventDefault(); nav(total - 1, 1); return; }
+    if (k === 'f' || k === 'F') { e.preventDefault(); toggleFull(); return; }
+    if (k === 'Escape') { if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (err) {} } return; }
+    if (k === 'w' || k === 'W') { app.classList.toggle('show-wipe'); return; }
+    if (k >= '1' && k <= '9') { nav(parseInt(k, 10) - 1); }
+  });
+
+  /* ---------- マウス操作 ---------- */
+  document.getElementById('edgeR').addEventListener('click', next);
+  document.getElementById('edgeL').addEventListener('click', prev);
+  document.addEventListener('mousemove', wake, { passive: true });
+  document.addEventListener('dragstart', function (e) { e.preventDefault(); });
+
+  /* ---------- リサイズ ---------- */
+  window.addEventListener('resize', fit);
+  document.addEventListener('fullscreenchange', fit);
+
+  /* ---------- 起動（自動再生は一切しない） ---------- */
+  fit();
+  if (total > 0) { apply(0, 1, true); }
+  wake();
+
+  /* ---------- 背景写真の読み込み（失敗してもネオン背景のまま） ---------- */
+  try {
+    Object.keys(IMAGES).forEach(function (key) {
+      var url = IMAGES[key];
+      if (!url) { return; }
+      var targets = document.querySelectorAll('[data-photo="' + key + '"]');
+      if (!targets.length) { return; }
+      var img = new Image();
+      img.onload = function () {
+        for (var i = 0; i < targets.length; i++) {
+          targets[i].style.backgroundImage = 'url("' + url + '")';
+          targets[i].classList.add('has-img');
+        }
+      };
+      img.onerror = function () { /* 読み込めない場合はネオン背景を維持 */ };
+      img.src = url;
+    });
+  } catch (err) { /* 画像処理で失敗してもスライド操作には影響させない */ }
+
+}());
+</script>
+</body>
+</html>
