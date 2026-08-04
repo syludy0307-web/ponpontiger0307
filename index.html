@@ -567,14 +567,16 @@ svg{display:block;overflow:visible;}
   transform:scale(1.06);
   animation:photoDrift 54s ease-in-out infinite alternate;
 }
-.photo.has-img{opacity:.42;}
-.photo::after{
+.photo.has-img{opacity:.66;}
+.photo::after{ /* 文字を読ませるため左側と下側を必ず暗く落とす */
   content:"";position:absolute;inset:0;
   background:
-    linear-gradient(90deg,rgba(3,4,10,.94) 0%,rgba(3,4,10,.72) 46%,rgba(3,4,10,.42) 100%),
-    linear-gradient(0deg,rgba(3,4,10,.9) 0%,rgba(3,4,10,.15) 55%,rgba(3,4,10,.5) 100%);
+    linear-gradient(90deg,rgba(3,4,10,.9) 0%,rgba(3,4,10,.6) 46%,rgba(3,4,10,.24) 100%),
+    linear-gradient(0deg,rgba(3,4,10,.86) 0%,rgba(3,4,10,.1) 55%,rgba(3,4,10,.44) 100%);
 }
-@keyframes photoDrift{0%{transform:scale(1.06) translate3d(-10px,0,0);}100%{transform:scale(1.13) translate3d(10px,-12px,0);}}
+@keyframes photoDrift{0%{transform:scale(1.03) translate3d(-10px,0,0);}100%{transform:scale(1.1) translate3d(10px,-12px,0);}}
+/* 写真が入ったスライドでは、写真と役割がダブる装飾を隠す（写真なしなら従来どおり表示） */
+.photo.has-img ~ .wrap .photo-hide{display:none;}
 
 /* =====================================================================
    スライド 1：オープニング
@@ -1147,16 +1149,16 @@ svg{display:block;overflow:visible;}
       <!-- 先にプレゼントボックスが光り、その後にタイトルが出る -->
       <div class="gift" data-anim="pop" style="--d:.05s">
         <div class="halo"></div>
-        <div class="box"></div>
-        <div class="lid"></div>
-        <div class="ribbon"></div>
-        <div class="bow"></div>
+        <div class="box photo-hide"></div>
+        <div class="lid photo-hide"></div>
+        <div class="ribbon photo-hide"></div>
+        <div class="bow photo-hide"></div>
         <div class="spark" style="left:20px;top:80px;--dl:-.2s"></div>
         <div class="spark" style="left:370px;top:150px;--dl:-1.1s"></div>
         <div class="spark" style="left:300px;top:40px;--dl:-2s"></div>
         <div class="spark" style="left:60px;top:330px;--dl:-1.6s"></div>
       </div>
-      <div class="sil rim s3-sil"><svg viewBox="0 0 180 320"><use href="#i-joy"/></svg></div>
+      <div class="sil rim s3-sil photo-hide"><svg viewBox="0 0 180 320"><use href="#i-joy"/></svg></div>
       <div class="lead-col">
         <div class="num-big" data-anim="left" style="--d:.42s">01</div>
         <h2 class="item-title" data-anim="left" style="--d:.56s">サプライズ</h2>
@@ -1260,7 +1262,7 @@ svg{display:block;overflow:visible;}
   <section class="slide" data-accent="var(--magenta)" data-accent2="var(--cyan)">
     <div class="photo" data-photo="words"></div>
     <div class="wrap">
-      <div class="sil rim" style="left:640px;bottom:0;height:330px;opacity:.55">
+      <div class="sil rim photo-hide" style="left:640px;bottom:0;height:330px;opacity:.55">
         <svg viewBox="0 0 300 320"><use href="#i-couple"/></svg>
       </div>
       <div class="lead-col">
@@ -1293,7 +1295,7 @@ svg{display:block;overflow:visible;}
     <div class="photo" data-photo="studio"></div>
     <div class="wrap">
       <h2 class="sec-title" data-anim="left" style="--d:.10s">恥ずかしがらずに<span class="hl">言葉にする</span></h2>
-      <div class="mic" data-anim="fade" style="--d:.5s">
+      <div class="mic photo-hide" data-anim="fade" style="--d:.5s">
         <div class="cap"><div class="grid"></div></div>
         <div class="arc"></div><div class="stem"></div><div class="base"></div>
       </div>
@@ -1413,7 +1415,7 @@ svg{display:block;overflow:visible;}
   <section class="slide" data-accent="var(--purple)" data-accent2="var(--pink)">
     <div class="photo" data-photo="why"></div>
     <div class="wrap">
-      <div class="sil rim s12-couple"><svg viewBox="0 0 300 320"><use href="#i-couple"/></svg></div>
+      <div class="sil rim s12-couple photo-hide"><svg viewBox="0 0 300 320"><use href="#i-couple"/></svg></div>
       <h2 class="sec-title" data-anim="left" style="--d:.10s">恋人として<span class="hl">認められている安心感</span></h2>
       <div class="cards3">
         <div class="glass neon-edge card3" data-anim="up" style="--d:.34s;--fd:0s">
@@ -1474,7 +1476,7 @@ svg{display:block;overflow:visible;}
   <section class="slide" data-accent="var(--cyan)" data-accent2="var(--pink)">
     <div class="photo" data-photo="ending"></div>
     <div class="wrap">
-      <div class="sil rim end-couple"><svg viewBox="0 0 300 320"><use href="#i-couple"/></svg></div>
+      <div class="sil rim end-couple photo-hide"><svg viewBox="0 0 300 320"><use href="#i-couple"/></svg></div>
       <div class="end-wrap">
         <div class="big" data-anim="up" style="--d:.22s">あなたが相手のために<br>していることは？</div>
         <div class="sub" data-anim="up" style="--d:.52s">
@@ -1530,20 +1532,20 @@ svg{display:block;overflow:visible;}
        自動的にネオン背景へ戻ります（画像の上には常に暗い幕が乗ります）
    ===================================================================== */
 var IMAGES = {
-  opening  : "",   /* 1  オープニング（夜景・バーのテラス） */
-  list     : "",   /* 2  5つの一覧 */
-  surprise : "",   /* 3  サプライズ（花束・プレゼント） */
-  surprise2: "",   /* 4  サプライズのポイント（カフェ・花） */
-  chat     : "",   /* 5  こまめに連絡（夜の街とスマホ） */
-  chat2    : "",   /* 6  連絡で大切なこと */
-  words    : "",   /* 7  言葉で愛情を伝える（会話するカップル） */
-  studio   : "",   /* 8  愛情表現のポイント（ラジオスタジオ） */
-  memory   : "",   /* 9  特別な日のメモリー（写真アルバム） */
-  memory2  : "",   /* 10 思い出の残し方 */
-  phone    : "",   /* 11 スマホ画面 */
-  why      : "",   /* 12 なぜ嬉しいのか（夜の街を歩く二人） */
-  summary  : "",   /* 13 まとめ */
-  ending   : ""    /* 14 エンディング（夜景を見る二人の後ろ姿） */
+  opening  : "img/opening.webp",    /* 1  オープニング（高層階から見た夜景） */
+  list     : "img/city.webp",       /* 2  5つの一覧（夜景・13と共通） */
+  surprise : "img/surprise.webp",   /* 3  サプライズ（花束とプレゼント） */
+  surprise2: "img/surprise2.webp",  /* 4  サプライズのポイント（夜のカフェ） */
+  chat     : "",                    /* 5  こまめに連絡（未設定＝ネオン背景） */
+  chat2    : "img/chat2.webp",      /* 6  連絡で大切なこと（雨上がりの夜道） */
+  words    : "img/words.webp",      /* 7  言葉で愛情を伝える（向き合う二人） */
+  studio   : "img/studio.webp",     /* 8  愛情表現のポイント（ラジオマイク） */
+  memory   : "img/memory.webp",     /* 9  特別な日のメモリー（写真アルバム） */
+  memory2  : "",                    /* 10 思い出の残し方（未設定＝ネオン背景） */
+  phone    : "img/phone.webp",      /* 11 スマホ画面（暗闇で光るスマホ） */
+  why      : "img/why.webp",        /* 12 なぜ嬉しいのか（夜道を歩く二人） */
+  summary  : "img/city.webp",       /* 13 まとめ（夜景・2と共通） */
+  ending   : "img/ending.webp"      /* 14 エンディング（夜景を見る二人） */
 };
 
 (function () {
