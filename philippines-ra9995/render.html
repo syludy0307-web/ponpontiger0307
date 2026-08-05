@@ -498,18 +498,7 @@ function scenePenalty(t){
     megaText([{txt:'削除しても遅い',size:126,y:1330,fill:'red',rot:-.02}],{t,slam:45.8});
   }
   if(t>47.4)segText([{t:'送信した時点で、罪は成立している',c:'w'}],{y:1490,size:56,t0:47.45,t});
-  // 赤フェード＋エンド
-  if(t>49.6){
-    const rp=clamp((t-49.6)/1.0,0,1);
-    ctx.fillStyle=`rgba(126,10,18,${rp})`;ctx.fillRect(0,0,W,H);
-    if(t>50.9){const na=clamp((t-50.9)*2.5,0,1);
-      ctx.save();ctx.globalAlpha=na;
-      ctx.font=`900 54px ${SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillStyle='#fff';ctx.fillText('※RA9995 反写真・ビデオ盗撮法（2009年）',W/2,920);
-      ctx.font=`500 26px ${SANS}`;ctx.fillStyle='rgba(255,255,255,0.75)';
-      ctx.fillText('Photos: Wikimedia Commons — Red marquis（CC0）/ Tony Webster（CC BY 2.0）',W/2,1010);
-      ctx.restore();}
-  }
+  // 赤フェード＋エンドはrenderFrame側のオーバーレイで描画
 }
 
 // ---------- overlays ----------
