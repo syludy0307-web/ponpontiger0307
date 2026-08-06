@@ -512,8 +512,8 @@ function sceneStory(t){
   if(t>11.85&&t<12.15){ctx.fillStyle=`rgba(0,0,0,${clamp((t-11.85)/.3,0,1)*.9})`;ctx.fillRect(0,0,W,H);}
   // ハードカットテロップ（1行=1テロップ）
   const hard={popDur:.07,stagger:.004};
-  if(t<2.0)segText([{t:'彼女',c:'w'}],{y:1660,size:64,t0:0.45,t,...hard});
-  else if(t<3.5)segText([{t:'付き合って一年',c:'w'}],{y:1660,size:64,t0:2.1,t,...hard});
+  if(t<2.0)segText([{t:'フィリピンパブ嬢の彼女',c:'w'}],{y:700,size:74,t0:0.45,t,...hard});
+  else if(t<3.5)segText([{t:'付き合って一年',c:'w'}],{y:700,size:72,t0:2.1,t,...hard});
   if(t>=3.65&&t<6.0)segText([{t:'二人の家',c:'w'}],{y:820,size:104,t0:3.65,t,...hard});
   if(t>=9.3&&t<10.6)megaText([{txt:'名義は彼女',size:120,y:450,fill:'gold',rot:-.015}],{t,slam:9.3,slamDur:.34});
   if(t>=10.7&&t<11.9)segText([{t:'支払い完了',c:'g'}],{y:640,size:96,t0:10.7,t,...hard});
