@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Estafa Short Renderer</title>
+<style>
+  html,body{margin:0;padding:0;background:#000;overflow:hidden}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="timeline.js"></script>
+<script>
+'use strict';
+const TL = window.TIMELINE;
+const W = TL.W, H = TL.H;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+// ---------- utils ----------
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,p)=>a+(b-a)*p;
+const fract = x=>x-Math.floor(x);
+const rnd = i=>fract(Math.sin(i*127.1+311.7)*43758.5453);
+const easeOutQuad = p=>1-(1-p)*(1-p);
+const easeInQuad = p=>p*p;
+const easeInOut = p=>p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+const easeOutCubic = p=>1-Math.pow(1-p,3);
+const easeOutQuint = p=>1-Math.pow(1-p,5);
+const easeOutBack = (p,s=2.2)=>{const c=s+1;return 1+c*Math.pow(p-1,3)+s*Math.pow(p-1,2);};
+
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+const SANS='"Noto Sans CJK JP"', SERIF='"Noto Serif CJK JP"';
+const COL={w:'#FFFFFF',r:'#FF4A3D',g:'#FFCF3F',ink:'#10131F'};
+
+function goldGrad(y0,y1){const g=ctx.createLinearGradient(0,y0,0,y1);
+  g.addColorStop(0,'#FFF3B0');g.addColorStop(.45,'#FFD34D');g.addColorStop(.55,'#F7A928');g.addColorStop(1,'#FFCE45');return g;}
+
+const mCache=new Map();
+function chW(font,ch){const k=font+'|'+ch;let v=mCache.get(k);
+  if(v===undefined){ctx.font=font;v=ctx.measureText(ch).width;mCache.set(k,v);}return v;}
+
+function segText(segs,o){
+  const font=`900 ${o.size}px ${o.font||SANS}`;
+  const chars=[];
+  for(const s of segs)for(const ch of s.t)chars.push({ch,c:s.c});
+  let total=0;for(const c of chars)total+=chW(font,c.ch);
+  let cx=(o.x!==undefined?o.x:W/2)-total/2;
+  const t=o.t,t0=o.t0,st=o.stagger!==undefined?o.stagger:.022,pd=o.popDur||.17;
+  ctx.save();ctx.textBaseline='middle';ctx.textAlign='center';ctx.lineJoin='round';ctx.lineCap='round';
+  for(let i=0;i<chars.length;i++){
+    const c=chars[i],w=chW(font,c.ch);
+    let sc=1,al=1;
+    if(!o.fixed){
+      const p=(t-(t0+i*st))/pd;
+      if(p<=0){cx+=w;continue;}
+      sc=p>=1?1:easeOutBack(p);al=clamp(p*2.5,0,1);
+    }
+    if(o.kwBounce!==false&&c.c!=='w'&&c.c!=='k')sc*=1+0.035*Math.sin(t*6+i*1.3);
+    ctx.save();ctx.translate(cx+w/2,o.y);ctx.scale(sc,sc);
+    ctx.globalAlpha=(o.alpha!==undefined?o.alpha:1)*al;
+    ctx.font=font;
+    ctx.strokeStyle=COL.ink;ctx.lineWidth=(o.strokeW!==undefined?o.strokeW:o.size*.18);
+    ctx.strokeText(c.ch,0,0);
+    if(c.c==='g'){ctx.fillStyle=goldGrad(-o.size*.55,o.size*.55);}
+    else ctx.fillStyle=COL[c.c]||c.c||'#fff';
+    ctx.fillText(c.ch,0,0);
+    ctx.restore();
+    cx+=w;
+  }
+  ctx.restore();
+  return total;
+}
+function popIn(t,t0,dur=.2){const p=(t-t0)/dur;return p<=0?0:p>=1?1:easeOutBack(p);}
+function fadeIn(t,t0,dur=.4){return clamp((t-t0)/dur,0,1);}
+function outSc(t,tEnd,dur=.16){
+  if(t<tEnd)return 1;const p=(t-tEnd)/dur;return p>=1?0:1-easeInQuad(p);}
+
+// ---------- impacts（抑制版）----------
+const IMPACTS=[
+  {t:3.35,amp:5,fl:{c:'255,255,255',a:.12}},
+  {t:5.60,amp:8,fl:{c:'255,255,255',a:.12}},
+  {t:6.96,amp:5,fl:{c:'255,255,255',a:.12}},
+  {t:7.85,amp:4,fl:{c:'255,255,255',a:.10}},
+  {t:21.4,amp:6},{t:24.35,amp:6},{t:26.2,amp:6},
+  {t:28.05,amp:8},
+  {t:29.15,amp:6},{t:31.55,amp:6},{t:33.0,amp:6},
+  {t:35.15,amp:10},
+  {t:36.55,amp:6},
+  {t:42.20,amp:14,fl:{c:'255,42,30',a:.45}}, // 唯一の赤フラッシュ
+  {t:43.30,amp:22},                           // 唯一の低音ドン
+  {t:43.85,amp:18},
+  {t:52.3,amp:5},
+];
+function shakeOffset(t){
+  let x=0,y=0;
+  for(const im of IMPACTS){const d=t-im.t;
+    if(d>0&&d<.5){const k=im.amp*Math.pow(1-d/.5,2.2);
+      const f=Math.floor(t*60);
+      x+=(rnd(f*3.7+im.t*91)-.5)*2*k;y+=(rnd(f*5.3+im.t*57)-.5)*2*k;}}
+  return {x,y};
+}
+function drawFlashes(t){
+  for(const im of IMPACTS){if(!im.fl)continue;const d=t-im.t;
+    if(d>0&&d<.3){ctx.fillStyle=`rgba(${im.fl.c},${im.fl.a*(1-d/.3)})`;ctx.fillRect(0,0,W,H);}}
+}
+
+// ---------- 背景（静かめ）----------
+function drawBG(t){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#07080F');g.addColorStop(1,'#10131F');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-Math.PI/7);
+  const period=280,off=(t*40)%period;
+  ctx.fillStyle='rgba(255,255,255,0.018)';
+  for(let x=-1700+off;x<1700;x+=period)ctx.fillRect(x,-1400,120,2800);
+  ctx.restore();
+  for(let i=0;i<12;i++){
+    const spd=18+rnd(i*3)*26;
+    const px=rnd(i*7)*W+Math.sin(t*(.4+rnd(i)*0.5)+i)*30;
+    const py=(H+140-((t*spd+rnd(i*13)*H)%(H+280)));
+    ctx.globalAlpha=.06+rnd(i*5)*.08;ctx.fillStyle='#FFFFFF';
+    ctx.beginPath();ctx.arc(px,py,2+rnd(i*11)*4,0,7);ctx.fill();}
+  ctx.globalAlpha=1;
+}
+
+// ---------- 図解パーツ ----------
+// 時系列バー
+function drawTimebar(t,y,p,tick,points,swapT){
+  const x0=140,x1=940;
+  const pe=clamp(p,0,1);
+  ctx.save();ctx.strokeStyle='rgba(220,228,255,0.85)';ctx.lineWidth=8;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(lerp(x0,x1-40,pe),y);ctx.stroke();
+  if(pe>=1){
+    ctx.fillStyle='rgba(220,228,255,0.85)';
+    ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x1-38,y-16);ctx.lineTo(x1-38,y+16);ctx.closePath();ctx.fill();
+    ctx.font=`700 30px ${SANS}`;ctx.fillStyle='rgba(220,228,255,0.6)';
+    ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('時間',x1-90,y+42);}
+  if(tick){
+    ctx.strokeStyle='rgba(255,255,255,0.9)';ctx.lineWidth=6;
+    ctx.beginPath();ctx.moveTo(540,y-26);ctx.lineTo(540,y+26);ctx.stroke();
+    ctx.font=`900 34px ${SANS}`;ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText('送金',540,y+34);}
+  if(points){
+    // 嘘(赤)と送金(白)の2点、swapTから1往復入れ替え
+    let xa=360,xb=720;
+    if(swapT!==undefined&&t>swapT){
+      const sp=(t-swapT)/1.4;
+      if(sp<0.5){const q=easeInOut(clamp(sp/0.5,0,1));xa=lerp(360,720,q);xb=lerp(720,360,q);}
+      else{const q=easeInOut(clamp((sp-0.5)/0.5,0,1));xa=lerp(720,360,q);xb=lerp(360,720,q);}
+    }
+    const pa=popIn(t,points[0],.25),pb=popIn(t,points[1],.25);
+    if(pa>0){ctx.save();ctx.translate(xa,y);ctx.scale(pa,pa);
+      ctx.fillStyle='#FF4A3D';ctx.beginPath();ctx.arc(0,0,22,0,7);ctx.fill();
+      ctx.font=`900 44px ${SANS}`;ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.lineJoin='round';ctx.strokeStyle=COL.ink;ctx.lineWidth=9;
+      ctx.strokeText('嘘',0,-38);ctx.fillStyle='#FF4A3D';ctx.fillText('嘘',0,-38);ctx.restore();}
+    if(pb>0){ctx.save();ctx.translate(xb,y);ctx.scale(pb,pb);
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,0,22,0,7);ctx.fill();
+      ctx.font=`900 44px ${SANS}`;ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.lineJoin='round';ctx.strokeStyle=COL.ink;ctx.lineWidth=9;
+      ctx.strokeText('送金',0,-38);ctx.fillStyle='#fff';ctx.fillText('送金',0,-38);ctx.restore();}
+  }
+  ctx.restore();
+}
+// チェックボックス行
+function drawCheckRow(t,x,y,label,tBox,tCheck,dimT,scale){
+  const bp=popIn(t,tBox,.2);if(bp<=0)return;
+  let al=1;
+  if(dimT!==undefined&&t>dimT)al=lerp(1,.10,clamp((t-dimT)/.4,0,1));
+  const s=scale||1;
+  ctx.save();ctx.translate(x,y);ctx.scale(s*bp,s*bp);ctx.globalAlpha=al;
+  ctx.strokeStyle='rgba(235,240,255,0.95)';ctx.lineWidth=7;
+  rr(-44,-44,88,88,16);ctx.stroke();
+  if(tCheck!==undefined&&t>tCheck){
+    const cp=clamp((t-tCheck)/.22,0,1);
+    ctx.strokeStyle='#fff';ctx.lineWidth=12;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();
+    if(cp<0.45){const q=cp/0.45;ctx.moveTo(-24,4);ctx.lineTo(lerp(-24,-4,q),lerp(4,24,q));}
+    else{ctx.moveTo(-24,4);ctx.lineTo(-4,24);
+      const q=(cp-0.45)/0.55;ctx.lineTo(lerp(-4,30,q),lerp(24,-20,q));}
+    ctx.stroke();
+    ctx.font=`900 ${54}px ${SANS}`;ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.lineJoin='round';ctx.strokeStyle=COL.ink;ctx.lineWidth=10;
+    ctx.strokeText(label,84,2);ctx.fillStyle='#fff';ctx.fillText(label,84,2);
+  }
+  ctx.restore();
+}
+// カード
+function drawCard(t,tIn,x,y,txt,flipT,slideTo,slideT,backTxt,slideRot){
+  const p=popIn(t,tIn,.15);if(p<=0)return;
+  let cx=x,cy=y,s=1,rot=0;
+  if(slideT!==undefined&&t>slideT){
+    const q=easeInOut(clamp((t-slideT)/.5,0,1));
+    cx=lerp(x,slideTo[0],q);cy=lerp(y,slideTo[1],q);s=lerp(1,.62,q);
+    rot=(slideRot||0)*q;}
+  let flip=1,showBack=false;
+  if(flipT!==undefined&&t>flipT){
+    const fp=clamp((t-flipT)/.4,0,1);
+    flip=Math.abs(Math.cos(fp*Math.PI));
+    showBack=fp>.5;}
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(rot);
+  ctx.scale((2.2-1.2*clamp(p,0,1))*s*Math.max(.06,flip),(2.2-1.2*clamp(p,0,1))*s);
+  ctx.globalAlpha=clamp((t-tIn)*7,0,1);
+  ctx.fillStyle='rgba(0,0,0,0.4)';rr(-142+8,-88+10,284,176,18);ctx.fill();
+  ctx.fillStyle=showBack?'#3A1114':'#F2F5FF';rr(-142,-88,284,176,18);ctx.fill();
+  ctx.strokeStyle=showBack?'#FF4A3D':'rgba(255,255,255,0.5)';ctx.lineWidth=5;rr(-142,-88,284,176,18);ctx.stroke();
+  ctx.font=`900 ${showBack?34:40}px ${SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle=showBack?'#FF6A5E':'#1B2340';
+  const lines=(showBack?backTxt:txt).split('\n');
+  for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],0,(i-(lines.length-1)/2)*46);
+  ctx.restore();
+}
+function drawCheckMark(t,t0,x,y,s,gold){
+  const p=popIn(t,t0,.25);if(p<=0)return;
+  ctx.save();ctx.translate(x,y);ctx.scale(s*p,s*p);
+  ctx.strokeStyle=gold?'#FFCF3F':'#fff';ctx.lineWidth=16;ctx.lineCap='round';ctx.lineJoin='round';
+  if(gold){ctx.shadowColor='rgba(255,207,63,0.7)';ctx.shadowBlur=26;}
+  ctx.beginPath();ctx.moveTo(-34,4);ctx.lineTo(-6,32);ctx.lineTo(44,-28);ctx.stroke();
+  ctx.restore();
+}
+function drawXMark(t,t0,x,y,s){
+  const p=popIn(t,t0,.2);if(p<=0)return;
+  ctx.save();ctx.translate(x,y);ctx.scale(s*p,s*p);
+  ctx.strokeStyle='#FF4A3D';ctx.lineWidth=16;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(-30,-30);ctx.lineTo(30,30);ctx.moveTo(30,-30);ctx.lineTo(-30,30);ctx.stroke();
+  ctx.restore();
+}
+// 送金明細カード（S1）
+function drawSlip(t){
+  const p=easeOutCubic(clamp((t-0.35)/.8,0,1));if(p<=0)return;
+  const x=lerp(W+420,540,p);
+  ctx.save();ctx.translate(x,880);ctx.rotate(-.02);
+  ctx.fillStyle='rgba(0,0,0,0.5)';rr(-312,-192,640,400,18);ctx.fill();
+  ctx.fillStyle='#F5F3EC';rr(-320,-200,640,400,18);ctx.fill();
+  ctx.fillStyle='#2C3350';rr(-320,-200,640,76,18);ctx.fill();
+  ctx.font=`900 38px ${SANS}`;ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('送 金 明 細',0,-162);
+  ctx.font=`700 34px ${SANS}`;ctx.fillStyle='#5A6178';ctx.textAlign='left';
+  ctx.fillText('宛先：',-270,-70);
+  ctx.fillStyle='#8B90A6';rr(-150,-88,300,36,8);ctx.fill();
+  ctx.fillStyle='#5A6178';ctx.fillText('金額：',-270,20);
+  ctx.font=`900 64px ${SANS}`;ctx.fillStyle='#1B2340';
+  ctx.fillText('₱ ───,───',-150,24);
+  ctx.fillStyle='#8B90A6';rr(-270,110,380,20,8);ctx.fill();
+  ctx.restore();
+}
+function drawHeart(t,t0,t1){
+  const ai=fadeIn(t,t0,.6);
+  const ao=t>t1?1-clamp((t-t1)/.9,0,1):1;
+  const a=ai*ao;if(a<=0)return;
+  ctx.save();ctx.translate(W/2,830);ctx.globalAlpha=a*.9;
+  ctx.scale(1+Math.sin(t*2.2)*.02,1+Math.sin(t*2.2)*.02);
+  ctx.strokeStyle='#FF7A8A';ctx.lineWidth=10;ctx.lineJoin='round';
+  ctx.beginPath();
+  ctx.moveTo(0,64);
+  ctx.bezierCurveTo(-110,-20,-70,-110,0,-52);
+  ctx.bezierCurveTo(70,-110,110,-20,0,64);
+  ctx.closePath();ctx.stroke();
+  ctx.restore();
+}
+
+// ---------- メガ/スタンプ ----------
+function megaText(lines,o){
+  ctx.save();
+  const baseX=o.x!==undefined?o.x:W/2;
+  for(const L of lines){
+    ctx.save();
+    ctx.translate(baseX,L.y);
+    ctx.rotate(L.rot||0);
+    let sx=1,sy=1,al=1;
+    if(o.slam!==undefined){const sp=(o.t-o.slam)/(o.slamDur||.14);
+      if(sp<0){ctx.restore();continue;}
+      const k=sp>=1?1:easeOutQuint(clamp(sp,0,1));sx=sy=2.5-1.5*k;
+      al=clamp(sp*3,0,1);}
+    else if(o.scalePop!==undefined){const p=(o.t-o.scalePop)/.4;
+      if(p<0){ctx.restore();continue;}
+      sx=sy=p>=1?1:easeOutBack(clamp(p,0,1),1.4);al=clamp(p*2.5,0,1);}
+    ctx.scale(sx,sy);ctx.globalAlpha=al;
+    ctx.font=`900 ${L.size}px ${L.font||SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.lineJoin='round';ctx.lineCap='round';
+    ctx.strokeStyle=COL.ink;ctx.lineWidth=L.size*.22;ctx.strokeText(L.txt,0,0);
+    if(L.fill!=='white'){ctx.strokeStyle='#fff';ctx.lineWidth=L.size*.08;ctx.strokeText(L.txt,0,0);}
+    if(L.fill==='red')ctx.fillStyle='#FF3B2F';
+    else if(L.fill==='gold')ctx.fillStyle=goldGrad(-L.size*.55,L.size*.55);
+    else ctx.fillStyle='#fff';
+    ctx.fillText(L.txt,0,0);
+    ctx.restore();}
+  ctx.restore();
+}
+function stampWhite(t,t0,x,y,w,h,txt,size){
+  const p=popIn(t,t0,.15);if(p<=0)return;
+  const sc=2.3-1.3*clamp(p,0,1);
+  ctx.save();ctx.translate(x,y);ctx.rotate(-.07);ctx.scale(sc,sc);
+  ctx.globalAlpha=clamp((t-t0)*7,0,1)*.96;
+  ctx.strokeStyle='rgba(240,244,255,0.95)';ctx.lineWidth=9;rr(-w/2,-h/2,w,h,14);ctx.stroke();
+  ctx.strokeStyle='rgba(240,244,255,0.45)';ctx.lineWidth=4;rr(-w/2+12,-h/2+12,w-24,h-24,10);ctx.stroke();
+  ctx.font=`900 ${size}px ${SERIF}`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineJoin='round';ctx.strokeStyle=COL.ink;ctx.lineWidth=size*.14;ctx.strokeText(txt,0,4);
+  ctx.fillStyle='#F0F4FF';ctx.fillText(txt,0,4);
+  ctx.restore();
+}
+function stampRed(t,t0,x,y,w,h,txt,size){
+  const p=popIn(t,t0,.15);if(p<=0)return;
+  const sc=2.4-1.4*clamp(p,0,1);
+  ctx.save();ctx.translate(x,y);ctx.rotate(-.09);ctx.scale(sc,sc);
+  ctx.globalAlpha=clamp((t-t0)*7,0,1)*.96;
+  ctx.fillStyle='rgba(120,10,15,0.30)';rr(-w/2,-h/2,w,h,18);ctx.fill();
+  ctx.strokeStyle='#FF4A3D';ctx.lineWidth=10;rr(-w/2,-h/2,w,h,18);ctx.stroke();
+  ctx.strokeStyle='rgba(255,74,61,0.55)';ctx.lineWidth=4;rr(-w/2+14,-h/2+14,w-28,h-28,12);ctx.stroke();
+  ctx.font=`900 ${size}px ${SERIF}`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineJoin='round';ctx.strokeStyle='#10131F';ctx.lineWidth=size*.16;ctx.strokeText(txt,0,4);
+  ctx.fillStyle='#FF4A3D';ctx.fillText(txt,0,4);
+  ctx.restore();
+}
+
+// ---------- チェックリスト共通データ ----------
+const CHECKS=[
+  {label:'嘘があった',      tBox:8.30, tCheck:10.85, dimT:40.5},
+  {label:'金が動く前',      tBox:8.60, tCheck:12.80, dimT:undefined},
+  {label:'信じて手放した',  tBox:8.90, tCheck:16.30, dimT:41.1},
+  {label:'損害が出た',      tBox:9.20, tCheck:19.90, dimT:41.7},
+];
+
+// ---------- scenes ----------
+function sceneIntro(t){
+  drawSlip(t);
+  if(t>1.1){ctx.save();ctx.globalAlpha=fadeIn(t,1.1,.7);
+    segText([{t:'取り返せるのか',c:'w'}],{y:1330,size:104,t0:1.1,t,popDur:.5,stagger:.05});
+    ctx.restore();}
+}
+
+function sceneLaw(t){
+  if(t<5.60){
+    megaText([{txt:'エスタファ',size:170,y:900,fill:'white'}],{t,slam:3.35});
+    if(t>4.2)segText([{t:'という罪がある',c:'w'}],{y:1100,size:64,t0:4.25,t});
+  }else if(t<6.96){
+    stampWhite(t,5.62,W/2,900,640,260,'刑法315条',96);
+  }else if(t<7.85){
+    megaText([{txt:'詐欺罪',size:190,y:900,fill:'red'}],{t,slam:6.98});
+  }else{
+    drawTimebar(t,1000,(t-7.9)/.5,false);
+  }
+}
+
+function sceneYoken(t){
+  segText([{t:'成立の要件',c:'w'}],{y:460,size:72,t0:8.1,t});
+  for(let i=0;i<4;i++){
+    const c=CHECKS[i];
+    drawCheckRow(t,240,620+i*170,c.label,c.tBox,c.tCheck,undefined,1);
+  }
+  // 4つ揃って一瞬光る（白）
+  const d=t-21.0;
+  if(d>0&&d<.5){
+    ctx.save();ctx.globalAlpha=(1-d/.5)*.35;ctx.fillStyle='#fff';
+    rr(150,520,780,760,30);ctx.fill();ctx.restore();}
+}
+
+function sceneCards(t){
+  drawTimebar(t,1150,1,true);
+  // 【6】通るカード（左の束へ）
+  const A=[['病気の母親\nが架空',21.35],['学費が\n作り話',24.30],['名前も\n別人',26.15]];
+  const AR=[-.09,-.02,.06];
+  for(let i=0;i<3;i++){
+    drawCard(t,A[i][1],240+i*300,690,A[i][0],26.95+i*.12,[236+i*16,1036-(i===1?10:0)],27.55+i*.1,'最初から\n存在しない',AR[i]);
+  }
+  if(t>28.0)drawCheckMark(t,28.0,300,860,1.5,true); // 最初の金
+  // 【7】通らないカード（右の束へ）
+  const B=[['連絡が\n減った',29.10],['他に男が\nいた',31.50],['結婚する気が\nなくなった',32.95]];
+  for(let i=0;i<3;i++){
+    drawCard(t,B[i][1],240+i*300,690,B[i][0],undefined,[796+i*16,1036-(i===1?10:0)],35.0+i*.08,'',AR[i]);
+  }
+  if(t>35.1)drawXMark(t,35.1,740,860,1.35);
+}
+
+function sceneCompare(t){
+  // 【8】上下比較
+  const p=popIn(t,36.5,.25);
+  ctx.save();ctx.globalAlpha=Math.min(1,p);
+  // 上：通る
+  const glow=t>38.5;
+  if(glow){ctx.save();ctx.shadowColor='rgba(255,207,63,0.8)';ctx.shadowBlur=44;
+    ctx.strokeStyle='rgba(255,207,63,0.9)';ctx.lineWidth=6;rr(120,530,840,360,24);ctx.stroke();ctx.restore();}
+  ctx.fillStyle='rgba(255,255,255,0.05)';rr(120,530,840,360,24);ctx.fill();
+  drawCheckMark(t,36.5,220,640,1.1,true);
+  segText([{t:'嘘が先',c:'w'}],{y:640,size:56,t0:36.5,t,x:560});
+  segText([{t:'通る',c:'g'}],{y:790,size:76,t0:36.6,t,x:560});
+  // 下：通らない
+  ctx.fillStyle='rgba(255,255,255,0.05)';rr(120,960,840,360,24);ctx.fill();
+  drawXMark(t,36.7,220,1070,1.0);
+  segText([{t:'金が先',c:'w'}],{y:1070,size:56,t0:36.7,t,x:560});
+  segText([{t:'通らない',c:'r'}],{y:1220,size:76,t0:36.8,t,x:560});
+  // 同じ金額
+  if(t>37.0){
+    ctx.font=`900 44px ${SANS}`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.lineJoin='round';
+    for(const yy of[705,1135]){
+      ctx.globalAlpha=fadeIn(t,37.0,.4)*.9;
+      ctx.strokeStyle=COL.ink;ctx.lineWidth=9;ctx.strokeText('₱300,000',790,yy);
+      ctx.fillStyle='#EAF0FF';ctx.fillText('₱300,000',790,yy);}
+    ctx.globalAlpha=1;}
+  ctx.restore();
+}
+
+function scenePeak(t){
+  // ① 再登場（コンパクト）
+  for(let i=0;i<4;i++){
+    const c=CHECKS[i];
+    let x=240,y=560+i*160,s=1;
+    if(i===1&&t>43.3){ // ④ 二つ目だけ残って中央へ
+      const q=easeInOut(clamp((t-43.3)/.45,0,1));
+      x=lerp(240,300,q);y=lerp(560+160,860,q);s=lerp(1,1.35,q);}
+    drawCheckRow(t,x,y,c.label,39.7+i*.12,39.9+i*.12,c.dimT,s);
+  }
+  // ③の後 ④ タイミングスタンプ
+  if(t>43.8)stampRed(t,43.8,W/2,1240,760,300,'タイミング',120);
+}
+
+function sceneTiming(t){
+  drawHeart(t,45.95,47.15);
+  if(t>47.6){
+    drawTimebar(t,1020,(t-47.6)/.4,false,[48.35,49.50],50.6);
+  }
+  if(t>52.25)megaText([{txt:'どっちが先か、それだけだ。',size:76,y:1360,fill:'gold'}],{t,scalePop:52.25});
+}
+
+// ---------- overlays ----------
+function drawBadge(t){
+  if(t<2.92)return;
+  const p=clamp((t-2.92)/.35,0,1);
+  const y=lerp(-70,150,easeOutBack(p));
+  ctx.save();ctx.translate(W/2,y+Math.sin(t*1.8)*3);
+  ctx.font=`900 44px ${SANS}`;
+  const txt='エスタファ｜刑法315条';
+  const w=ctx.measureText(txt).width+120;
+  ctx.fillStyle='rgba(5,8,20,0.78)';rr(-w/2,-44,w,88,44);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.75)';ctx.lineWidth=4;rr(-w/2,-44,w,88,44);ctx.stroke();
+  ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(txt,0,3);ctx.restore();
+}
+function drawSubs(t){
+  for(const s of TL.subs){
+    if(t<s.s||t>s.e+.12)continue;
+    const g=ctx.createLinearGradient(0,1440,0,H);
+    g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,0.55)');
+    ctx.fillStyle=g;ctx.fillRect(0,1440,W,H-1440);
+    const n=s.lines.length;
+    const fade=t>s.e?clamp(1-(t-s.e)/.12,0,1):1;
+    for(let i=0;i<n;i++){
+      const y=n===1?1620:1568+i*104;
+      segText(s.lines[i],{y,size:64,t0:s.s+i*.14,t,strokeW:13,alpha:fade});}
+  }
+}
+function drawProgress(t){ // 白バー（金禁止ルール対応）
+  ctx.fillStyle='rgba(255,255,255,0.12)';ctx.fillRect(0,0,W,10);
+  ctx.fillStyle='rgba(235,240,255,0.85)';ctx.fillRect(0,0,W*clamp(t/TL.DUR,0,1),10);
+}
+function vignetteGrain(t){
+  const vg=ctx.createRadialGradient(W/2,H/2,520,W/2,H/2,1400);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.46)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+  const f=Math.floor(t*30);
+  ctx.globalAlpha=.04;ctx.fillStyle='#fff';
+  for(let i=0;i<90;i++){
+    ctx.fillRect(rnd(i*7+f*13)*W,rnd(i*11+f*17)*H,2.2,2.2);}
+  ctx.globalAlpha=1;
+}
+
+// ---------- main ----------
+function currentSection(t){
+  for(const s of TL.sections)if(t>=s.s&&t<s.e)return s;
+  return TL.sections[TL.sections.length-1];
+}
+window.renderFrame=function(t){
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);
+  const sec=currentSection(t);
+  const off=shakeOffset(t);
+  ctx.save();ctx.translate(off.x,off.y);
+  drawBG(t);
+  if(sec.id==='intro')sceneIntro(t);
+  else if(sec.id==='law')sceneLaw(t);
+  else if(sec.id==='yoken')sceneYoken(t);
+  else if(sec.id==='cards')sceneCards(t);
+  else if(sec.id==='compare')sceneCompare(t);
+  else if(sec.id==='peak')scenePeak(t);
+  else sceneTiming(t);
+  ctx.restore();
+  drawSubs(t);
+  drawBadge(t);
+  drawProgress(t);
+  drawFlashes(t);
+  vignetteGrain(t);
+  if(t<.3){ctx.fillStyle=`rgba(0,0,0,${1-t/.3})`;ctx.fillRect(0,0,W,H);}
+  if(t>53.2){ctx.fillStyle=`rgba(0,0,0,${clamp((t-53.2)/.8,0,1)})`;ctx.fillRect(0,0,W,H);}
+};
+
+// ---------- boot ----------
+(async()=>{
+  const loads=[
+    `900 100px ${SANS}`,`700 60px ${SANS}`,`900 100px ${SERIF}`,
+  ].map(f=>document.fonts.load(f,'エスタファ詐欺罪要件嘘送金タイミング₱'));
+  try{await Promise.all(loads);await document.fonts.ready;}catch(e){}
+  window.renderFrame(0);
+  window.READY=true;
+})();
+</script>
+</body>
+</html>
