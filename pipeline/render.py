@@ -149,6 +149,9 @@ def scene_filter(sc, nframes):
         fades = f"fade=t=in:st={t_in}:d={d_in}:alpha=1"
         if t_out < dur:
             fades += f",fade=t=out:st={t_out}:d={d_out}:alpha=1"
+        oa = ov.get("alpha", 1.0)
+        if oa < 1.0:
+            fades += f",colorchannelmixer=aa={oa:.2f}"
         chains.append(
             f"[{idx}:v]format=rgba,scale=iw*{sc_f:.3f}:-1,{fades}[ov{idx}]")
         ox = f"{ov['cx']}*1920-w/2+({ov.get('dx', 0)})*(t/{dur:.3f})"

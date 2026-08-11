@@ -406,7 +406,7 @@ def fig_humanoid(hgt=900, kind="shadow", seed=3):
     cx = w / 2
     hd = hgt * 0.30
     if kind == "robe":
-        body = (226, 224, 214, 235)
+        body = (198, 195, 184, 216)
         _body(d, cx, hgt, w, hgt * 0.155, w * 0.235, w * 0.40, body)
         d.ellipse([cx - hd * 0.30, hgt * 0.02, cx + hd * 0.30, hgt * 0.02 + hd * 0.62], fill=body)
         d.ellipse([cx - hd * 0.17, hgt * 0.055, cx + hd * 0.17, hgt * 0.055 + hd * 0.44],

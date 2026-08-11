@@ -1640,14 +1640,15 @@ def five_horizon(seed=133):
     for (x, hgt, w_), lab in zip(shapes, labels):
         bx0, bx1 = AW * x, AW * (x + w_)
         by0, by1 = AH * (0.70 - hgt), AH * 0.70
-        d.rectangle([bx0, by0, bx1, by1], fill=(15, 18, 25))
-        for wy in np.linspace(by0 + 20, by1 - 30, 6):
-            for wx in np.linspace(bx0 + 14, bx1 - 30, 5):
+        d.rectangle([bx0, by0, bx1, by1], fill=(34, 40, 54))
+        d.rectangle([bx0, by0, bx1, by0 + 8], fill=(46, 54, 70))
+        for wy in np.linspace(by0 + 24, by1 - 34, 6):
+            for wx in np.linspace(bx0 + 16, bx1 - 32, 5):
                 if rng.random() < 0.8:
-                    d.rectangle([wx, wy, wx + 14, wy + 18], fill=(7, 9, 13))
+                    d.rectangle([wx, wy, wx + 15, wy + 19], fill=(10, 12, 17))
         d.text(((bx0 + bx1) / 2, by0 - 46), lab, font=f, anchor="mm",
-               fill=(148, 160, 175))
-    img = B.fog_bands(img, seed, 0.6, (36, 46, 64), y0=0.55)
+               fill=(168, 180, 196))
+    img = B.fog_bands(img, seed, 0.42, (36, 46, 64), y0=0.60)
     img = B.add_glow(img, AW * 0.5, AH * 0.18, AW * 0.5, (30, 40, 60), 0.5)
     return finish(img, lift=(4, 6, 12), gain=(178, 190, 218), sat=0.7, vig=0.6,
                   seed=seed)
