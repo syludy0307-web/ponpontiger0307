@@ -20,7 +20,10 @@ pipeline/
   gen_art.py       静止画一括生成 + コンタクトシート
   subs.py          ASS生成(字幕 + ランク演出 + 情報カード + HUD 等 800+イベント)
   render.py        ffmpeg合成(zoompan/霧/グレイン/スティンガー→連結→焼き込み)
-output/            haibyouin_top5_16x9.mp4 (完成品)
+output/
+  haibyouin_top5_720p.mp4   720p配布版(リポジトリ同梱)
+  haibyouin_top5_16x9.mp4   1080p配布版(約230MB — GitHubの容量制限のため
+                            リポジトリには含めず。下記手順で再生成可能)
 ```
 
 ## ビルド手順
@@ -33,6 +36,7 @@ cd pipeline
 python3 gen_art.py        # シーン静止画 + オーバーレイ生成
 python3 subs.py           # build/main.ass 生成
 python3 render.py all     # fog/stinger → 77クリップ → 連結 → 最終mux
+python3 render.py dist    # 配布版エンコード(1080p軽量化 + 720p 2パス)
 ```
 
 個別リビルド: `python3 gen_art.py <art名>` / `python3 render.py scenes <sceneID>`

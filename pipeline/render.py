@@ -246,6 +246,25 @@ def final():
     print("final:", FINAL)
 
 
+def dist():
+    """Distribution encodes from the pristine final: 1080p / 720p / preview."""
+    hq = os.path.join(BUILD, "final_hq.mp4")
+    if not os.path.exists(hq):
+        os.rename(FINAL, hq)
+    run(["ffmpeg", "-y", "-i", hq, "-vf", "hqdn3d=1.6:1.2:3.5:3.0",
+         "-c:v", "libx264", "-preset", "faster", "-crf", "25", "-pix_fmt", "yuv420p",
+         "-c:a", "copy", "-movflags", "+faststart", FINAL])
+    p720 = os.path.join(OUT, "haibyouin_top5_720p.mp4")
+    passlog = os.path.join(BUILD, "x264pass")
+    common = ["-vf", "scale=1280:720,hqdn3d=2:1.5:4:3.5", "-c:v", "libx264",
+              "-preset", "slow", "-b:v", "850k", "-pix_fmt", "yuv420p",
+              "-passlogfile", passlog]
+    run(["ffmpeg", "-y", "-i", hq] + common + ["-pass", "1", "-an", "-f", "null", "-"])
+    run(["ffmpeg", "-y", "-i", hq] + common + ["-pass", "2", "-c:a", "copy",
+         "-movflags", "+faststart", p720])
+    print("dist:", FINAL, p720)
+
+
 if __name__ == "__main__":
     ensure_dirs()
     args = sys.argv[1:]
@@ -261,3 +280,5 @@ if __name__ == "__main__":
         concat()
     if stage in ("final", "all"):
         final()
+    if stage == "dist":
+        dist()
