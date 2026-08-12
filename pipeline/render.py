@@ -265,6 +265,65 @@ def dist():
     print("dist:", FINAL, p720)
 
 
+def _dur(path):
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                        "-of", "csv=p=0", path], stdout=subprocess.PIPE)
+    return float(r.stdout.decode().strip())
+
+
+def _seg_ts(src, out_ts, w, h, crf, head_fade=0.0, tail_fade=0.0, abr="192k"):
+    """Normalize an OP/ED clip to the main video's parameters as MPEG-TS."""
+    d = _dur(src)
+    vf = (f"scale={w}:{h}:force_original_aspect_ratio=decrease,"
+          f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,fps={FPS},format=yuv420p")
+    af = "anull"
+    if head_fade:
+        vf += f",fade=t=in:st=0:d={head_fade}"
+        af += f",afade=t=in:st=0:d={head_fade}"
+    if tail_fade:
+        st = max(0, d - tail_fade)
+        vf += f",fade=t=out:st={st:.3f}:d={tail_fade}"
+        af += f",afade=t=out:st={st:.3f}:d={tail_fade}"
+    run(["ffmpeg", "-y", "-i", src, "-vf", vf, "-af", af,
+         "-c:v", "libx264", "-preset", "medium", "-crf", str(crf),
+         "-c:a", "aac", "-b:a", abr, "-ar", "44100", "-ac", "2",
+         "-f", "mpegts", out_ts])
+
+
+def _copy_ts(src, out_ts):
+    run(["ffmpeg", "-y", "-i", src, "-c", "copy", "-bsf:v", "h264_mp4toannexb",
+         "-f", "mpegts", out_ts])
+
+
+def attach():
+    """Prepend source/op.mp4 and append source/ed.mp4 to every deliverable."""
+    from common import SRC
+    op = os.path.join(SRC, "op.mp4")
+    edv = os.path.join(SRC, "ed.mp4")
+    targets = [
+        (FINAL, 1920, 1080, 20, "192k"),
+        (os.path.join(OUT, "haibyouin_top5_720p.mp4"), 1280, 720, 22, "192k"),
+        (os.path.join(BUILD, "haibyouin_top5_preview_540p.mp4"), 960, 540, 30, "64k"),
+    ]
+    for main, w, h, crf, abr in targets:
+        if not os.path.exists(main):
+            print("skip (missing):", main)
+            continue
+        base = os.path.splitext(os.path.basename(main))[0]
+        t_op = os.path.join(BUILD, f"op_{h}.ts")
+        t_ed = os.path.join(BUILD, f"ed_{h}.ts")
+        t_mn = os.path.join(BUILD, f"mn_{base}.ts")
+        _seg_ts(op, t_op, w, h, crf, tail_fade=0.35, abr=abr)
+        _seg_ts(edv, t_ed, w, h, crf, head_fade=0.35, tail_fade=0.6, abr=abr)
+        _copy_ts(main, t_mn)
+        tmp = main + ".tmp.mp4"
+        run(["ffmpeg", "-y", "-i", f"concat:{t_op}|{t_mn}|{t_ed}",
+             "-c", "copy", "-bsf:a", "aac_adtstoasc",
+             "-movflags", "+faststart", tmp])
+        os.replace(tmp, main)
+        print(f"attached OP/ED -> {main} ({_dur(main):.2f}s)")
+
+
 if __name__ == "__main__":
     ensure_dirs()
     args = sys.argv[1:]
@@ -282,3 +341,5 @@ if __name__ == "__main__":
         final()
     if stage == "dist":
         dist()
+    if stage == "attach":
+        attach()

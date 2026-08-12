@@ -11,7 +11,7 @@
 ## 構成
 
 ```
-source/            narration.mp3 / narration.srt (入力)
+source/            narration.mp3 / narration.srt / op.mp4 / ed.mp4 (入力)
 pipeline/
   common.py        定数・SRTパーサ
   scenes.py        77カットのタイムライン(カメラ・FX・オーバーレイ)
@@ -37,6 +37,7 @@ python3 gen_art.py        # シーン静止画 + オーバーレイ生成
 python3 subs.py           # build/main.ass 生成
 python3 render.py all     # fog/stinger → 77クリップ → 連結 → 最終mux
 python3 render.py dist    # 配布版エンコード(1080p軽量化 + 720p 2パス)
+python3 render.py attach  # source/op.mp4・ed.mp4 を本編の前後に連結
 ```
 
 個別リビルド: `python3 gen_art.py <art名>` / `python3 render.py scenes <sceneID>`
