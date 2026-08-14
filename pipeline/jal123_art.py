@@ -5,6 +5,8 @@ Visual language: technical / blueprint.  Deep navy ground, cyan schematic
 line-work, amber data accents, restrained red reserved for failure points.
 Deliberately non-sensational: no wreckage detail, no victims, no gore.
 """
+import os
+import re
 import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageOps
 
@@ -1356,6 +1358,105 @@ def doc_timeline(seed=72):
     return finish(img, seed=seed)
 
 
+# ================================================================ photographs
+# Freely-licensed stills from Wikimedia Commons.  Every card burns its own
+# credit line; CAPTIONS say plainly what the image is, and CG/diagram sources
+# are labelled as such so they cannot be mistaken for photographs.
+import json as _json
+
+PHOTO_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         "source", "jal123", "photos")
+try:
+    CREDITS = _json.load(open(os.path.join(PHOTO_DIR, "credits.json"), encoding="utf-8"))
+except OSError:
+    CREDITS = {}
+
+CAPTIONS = {
+    "ja8119_air": ("事故機 JA8119", "ボーイング747SR-46 / 空港にて"),
+    "ja8119_ramp": ("事故機 JA8119", "日本航空 ボーイング747SR-46"),
+    "ja8119_itami": ("事故機 JA8119", "1984年 伊丹空港 ── 事故の前年"),
+    "tailstrike": ("1978年 しりもち事故", "CG図解(写真ではありません)"),
+    "flightpath": ("推定飛行経路", "急減圧発生地点と迷走した航跡"),
+    "cenotaph": ("御巣鷹の尾根 昇魂之碑", "群馬県上野村"),
+    "osutaka_mt": ("御巣鷹山 周辺の山岳地帯", "夜間の救助を阻んだ地形"),
+    "ridge_trail": ("御巣鷹の尾根 登山道入口", "群馬県上野村"),
+    "ridge_stairs": ("御巣鷹の尾根へ続く階段", "2009年に整備されたもの"),
+}
+
+
+def photo_card(key, seed=200, tone=0.86, dark=0.82):
+    """Full-bleed documentary still with caption and licence credit."""
+    meta = CREDITS.get(key, {})
+    path = os.path.join(PHOTO_DIR, key + ".jpg")
+    src = Image.open(path).convert("RGB")
+    # cover-fit into the art frame
+    s = max(AW / src.width, AH / src.height)
+    src = src.resize((max(AW, int(src.width * s)), max(AH, int(src.height * s))),
+                     Image.LANCZOS)
+    left = (src.width - AW) // 2
+    top = int((src.height - AH) * 0.42)
+    img = src.crop((left, top, left + AW, top + AH))
+    img = ImageEnhance.Color(img).enhance(tone)
+    img = ImageEnhance.Brightness(img).enhance(dark)
+    # cool documentary grade to sit with the blueprint scenes
+    img = B.grade(img, (10, 14, 22), (238, 242, 248), 1.0, 0.90)
+    img = B.vignette(img, 0.42)
+    img = B.dirt(img, seed, 0.02)
+    d = ImageDraw.Draw(img, "RGBA")
+    d.rectangle([0, 0, AW - 1, AH - 1], outline=(*LINE, 60), width=4)
+    # caption block, lower left, clear of the burned-in subtitles
+    title, sub = CAPTIONS.get(key, (key, ""))
+    bx, by = 140, int(AH * 0.60)
+    tw = max(len(title) * 64, len(sub) * 40) + 96
+    d.rectangle([bx, by, bx + tw, by + 190], fill=(6, 9, 14, 190))
+    d.rectangle([bx, by, bx + 11, by + 190], fill=(*AMB, 235))
+    d.text((bx + 44, by + 52), title, font=font(62, "black"), fill=(240, 244, 248),
+           anchor="lm")
+    d.text((bx + 46, by + 132), sub, font=font(36, "bold"), fill=(*LINE, 235),
+           anchor="lm")
+    artist = re.split(r":|derivative", meta.get("artist", ""))[0].strip()[:34]
+    cred = f'{artist} / {meta.get("lic", "")}  ── Wikimedia Commons'
+    d.text((AW - 150, AH - 92), cred, font=font(30, "bold"), fill=(214, 220, 228, 190),
+           anchor="rs")
+    return img
+
+
+def photo_ja8119_air(seed=200):
+    return photo_card("ja8119_air", seed)
+
+
+def photo_ja8119_ramp(seed=201):
+    return photo_card("ja8119_ramp", seed)
+
+
+def photo_ja8119_itami(seed=202):
+    return photo_card("ja8119_itami", seed)
+
+
+def photo_tailstrike(seed=203):
+    return photo_card("tailstrike", seed, tone=0.7, dark=0.88)
+
+
+def photo_flightpath(seed=204):
+    return photo_card("flightpath", seed, tone=1.0, dark=1.0)
+
+
+def photo_cenotaph(seed=205):
+    return photo_card("cenotaph", seed, tone=0.78, dark=0.78)
+
+
+def photo_osutaka_mt(seed=206):
+    return photo_card("osutaka_mt", seed, tone=0.74, dark=0.80)
+
+
+def photo_ridge_trail(seed=207):
+    return photo_card("ridge_trail", seed, tone=0.74, dark=0.78)
+
+
+def photo_ridge_stairs(seed=208):
+    return photo_card("ridge_stairs", seed, tone=0.74, dark=0.76)
+
+
 def report_1987(seed=80):
     return report_doc(seed, "航空事故調査報告書", "1987年 公表", lines=13, seal=True)
 
@@ -1452,7 +1553,7 @@ def worst_ranking(seed=79):
 
 BUILDERS = {n: f for n, f in globals().items()
             if callable(f) and not n.startswith("_") and
-            n not in ("font", "finish", "board", "corner_marks", "dim_line",
+            n not in ("font", "finish", "board", "corner_marks", "dim_line", "photo_card",
                       "b747_side", "b747_top", "section_card", "claim_card",
                       "report_doc", "bulkhead_front")}
 OVERLAYS = {}

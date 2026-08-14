@@ -515,6 +515,16 @@ def cues():
     ev(2, 1069.8, 1072.0, "Serif",
        f"{{\\an5\\pos(960,540)\\fs64\\1c{STEEL}\\fsp16\\bord3\\3c{INK}"
        f"\\fad(400,600)}}日本航空123便")
+    # aggregate image credits (each photo also carries its own on-screen credit)
+    ev(4, 1046.4, 1059.6, "Mono",
+       f"{{\\an9\\pos(1866,232)\\fs27\\1c{STEEL}\\bord2\\3c{INK}\\fsp1"
+       f"\\fad(500,400)}}"
+       "写真: Wikimedia Commons\\N"
+       "Dennis HKG (CC BY 2.0) / Stuart Jessup (CC BY-SA 2.0)\\N"
+       "Harcmac60 (CC BY-SA 3.0) / Anynobody (CC BY-SA 3.0)\\N"
+       "Eluveitie・Phoenix7777 (CC BY-SA 3.0)\\N"
+       "nattou (CC BY-SA 3.0) / Koda6029 (CC BY-SA 4.0)\\N"
+       "daipresents (CC BY 3.0)")
 
 
 HEADER = """[Script Info]
