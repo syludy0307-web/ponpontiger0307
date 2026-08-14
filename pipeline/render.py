@@ -254,10 +254,17 @@ def final():
 
 
 def dist():
-    """Distribution encodes from the pristine final: 1080p / 720p / preview."""
+    """Distribution encodes from the pristine final: 1080p / 720p / preview.
+
+    FINAL is always promoted to the pristine copy when it exists — reusing a
+    stale final_hq.mp4 from an earlier run would silently re-encode outdated
+    content over a freshly rendered master.
+    """
     hq = os.path.join(BUILD, "final_hq.mp4")
-    if not os.path.exists(hq):
-        os.rename(FINAL, hq)
+    if os.path.exists(FINAL):
+        os.replace(FINAL, hq)
+    elif not os.path.exists(hq):
+        raise SystemExit("dist: neither the final nor a pristine copy exists")
     run(["ffmpeg", "-y", "-i", hq, "-vf", "hqdn3d=1.6:1.2:3.5:3.0",
          "-c:v", "libx264", "-preset", "faster", "-crf", "25", "-pix_fmt", "yuv420p",
          "-c:a", "copy", "-movflags", "+faststart", FINAL])
