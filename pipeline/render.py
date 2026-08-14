@@ -261,7 +261,7 @@ def dist():
     run(["ffmpeg", "-y", "-i", hq, "-vf", "hqdn3d=1.6:1.2:3.5:3.0",
          "-c:v", "libx264", "-preset", "faster", "-crf", "25", "-pix_fmt", "yuv420p",
          "-c:a", "copy", "-movflags", "+faststart", FINAL])
-    p720 = os.path.join(OUT, "haibyouin_top5_720p.mp4")
+    p720 = os.path.join(OUT, f"{BASENAME}_720p.mp4")
     passlog = os.path.join(BUILD, "x264pass")
     common = ["-vf", "scale=1280:720,hqdn3d=2:1.5:4:3.5", "-c:v", "libx264",
               "-preset", "slow", "-b:v", "850k", "-pix_fmt", "yuv420p",
@@ -269,7 +269,15 @@ def dist():
     run(["ffmpeg", "-y", "-i", hq] + common + ["-pass", "1", "-an", "-f", "null", "-"])
     run(["ffmpeg", "-y", "-i", hq] + common + ["-pass", "2", "-c:a", "copy",
          "-movflags", "+faststart", p720])
-    print("dist:", FINAL, p720)
+    prev = os.path.join(BUILD, f"{BASENAME}_preview_540p.mp4")
+    plog = os.path.join(BUILD, "x264pass540")
+    pc = ["-vf", "scale=960:540,hqdn3d=3:2:6:4.5", "-c:v", "libx264",
+          "-preset", "slow", "-b:v", "245k", "-pix_fmt", "yuv420p",
+          "-passlogfile", plog]
+    run(["ffmpeg", "-y", "-i", hq] + pc + ["-pass", "1", "-an", "-f", "null", "-"])
+    run(["ffmpeg", "-y", "-i", hq] + pc + ["-pass", "2", "-c:a", "aac", "-b:a", "64k",
+         "-movflags", "+faststart", prev])
+    print("dist:", FINAL, p720, prev)
 
 
 def _dur(path):
@@ -303,14 +311,18 @@ def _copy_ts(src, out_ts):
 
 
 def attach():
-    """Prepend source/op.mp4 and append source/ed.mp4 to every deliverable."""
+    """Prepend source/op.mp4 and append source/ed.mp4 to this project's deliverables.
+
+    Only ever touches files belonging to the active PROJ: re-running it must
+    not double-attach OP/ED to another project's output.
+    """
     from common import SRC
     op = os.path.join(SRC, "op.mp4")
     edv = os.path.join(SRC, "ed.mp4")
     targets = [
         (FINAL, 1920, 1080, 20, "192k"),
-        (os.path.join(OUT, "haibyouin_top5_720p.mp4"), 1280, 720, 22, "192k"),
-        (os.path.join(BUILD, "haibyouin_top5_preview_540p.mp4"), 960, 540, 30, "64k"),
+        (os.path.join(OUT, f"{BASENAME}_720p.mp4"), 1280, 720, 22, "192k"),
+        (os.path.join(BUILD, f"{BASENAME}_preview_540p.mp4"), 960, 540, 30, "64k"),
     ]
     for main, w, h, crf, abr in targets:
         if not os.path.exists(main):
