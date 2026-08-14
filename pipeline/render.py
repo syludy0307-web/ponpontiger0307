@@ -8,18 +8,22 @@ Usage:
     python3 render.py final          # burn subs + mux audio -> output/
     python3 render.py all
 """
+import importlib
 import os
 import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import AUDIO_PATH, BUILD, CLIPS, FPS, OUT, STILLS, ensure_dirs
-from scenes import SCENES
+from common import (AUDIO_PATH, BASENAME, BUILD, CLIPS, FPS, OUT, PROJ, STILLS,
+                    ensure_dirs)
+
+_scene_mod = "scenes" if PROJ == "haibyouin" else f"{PROJ}_scenes"
+SCENES = importlib.import_module(_scene_mod).SCENES
 
 FOG = os.path.join(BUILD, "fog.mp4")
 STINGER = os.path.join(BUILD, "stinger.mp4")
 MASTER = os.path.join(BUILD, "master.mp4")
-FINAL = os.path.join(OUT, "haibyouin_top5_16x9.mp4")
+FINAL = os.path.join(OUT, f"{BASENAME}_16x9.mp4")
 
 
 def run(cmd, quiet=True):

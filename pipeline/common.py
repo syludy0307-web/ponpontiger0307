@@ -6,18 +6,32 @@ import re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "source")
-BUILD = os.path.join(ROOT, "build")
-STILLS = os.path.join(BUILD, "stills")
-CLIPS = os.path.join(BUILD, "clips")
 OUT = os.path.join(ROOT, "output")
 
-SRT_PATH = os.path.join(SRC, "narration.srt")
-AUDIO_PATH = os.path.join(SRC, "narration.mp3")
+# Project selection: "haibyouin" (haunted hospitals) or "jal123" (flight 123).
+PROJ = os.environ.get("PROJ", "haibyouin")
+
+if PROJ == "haibyouin":
+    BUILD = os.path.join(ROOT, "build")
+    SRT_PATH = os.path.join(SRC, "narration.srt")
+    AUDIO_PATH = os.path.join(SRC, "narration.mp3")
+    BASENAME = "haibyouin_top5"
+    DUR_TOTAL = 676.57
+else:
+    BUILD = os.path.join(ROOT, "build", PROJ)
+    SRT_PATH = os.path.join(SRC, PROJ, "narration.srt")
+    AUDIO_PATH = os.path.join(SRC, PROJ, "narration.mp3")
+    BASENAME = "jal123"
+    DUR_TOTAL = 1072.09
+
+STILLS = os.path.join(BUILD, "stills")
+CLIPS = os.path.join(BUILD, "clips")
+BGM_DIR = os.path.join(SRC, "bgm")
+SE_DIR = os.path.join(SRC, "se")
 
 W, H = 1920, 1080          # output frame
 AW, AH = 2688, 1512        # art overscan (1.4x) for Ken Burns headroom
 FPS = 30
-DUR_TOTAL = 676.57         # audio duration (s)
 
 F_SANS = "Noto Sans CJK JP"
 F_SANS_BLACK = "Noto Sans CJK JP Black"

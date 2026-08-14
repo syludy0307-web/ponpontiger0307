@@ -4,13 +4,17 @@
     python3 gen_art.py name ...   # named builders only (force)
     python3 gen_art.py --sheet    # contact sheet of all stills
 """
+import importlib
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import STILLS, ensure_dirs
-from scenes import SCENES
-import art_scenes as A
+from common import STILLS, ensure_dirs, PROJ
+
+SCENES = importlib.import_module(
+    "scenes" if PROJ == "haibyouin" else f"{PROJ}_scenes").SCENES
+A = importlib.import_module(
+    "art_scenes" if PROJ == "haibyouin" else f"{PROJ}_art")
 
 
 def build(name, force=False):
