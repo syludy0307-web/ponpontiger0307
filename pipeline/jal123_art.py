@@ -1024,16 +1024,23 @@ def location_confusion(seed=53):
 
 def night_search(seed=54):
     img = ridge_night(seed + 3)
+    img = ImageEnhance.Brightness(img).enhance(1.25)
     d = ImageDraw.Draw(img, "RGBA")
-    hx, hy = AW * 0.62, AH * 0.26
-    d.ellipse([hx - 70, hy - 22, hx + 70, hy + 22], fill=(30, 36, 46, 255))
-    d.line([hx - 130, hy - 40, hx + 130, hy - 40], fill=(*STEEL, 220), width=7)
-    d.line([hx, hy - 40, hx, hy - 20], fill=(*STEEL, 220), width=7)
-    d.line([hx - 60, hy + 16, hx - 140, hy + 40], fill=(*STEEL, 200), width=6)
-    img = B.light_cone(img, (hx, hy + 20), (AW * 0.34, AH * 0.86), (AW * 0.70, AH * 0.92),
-                       (150, 160, 140), alpha=70, blur=70)
-    img = B.add_glow(img, AW * 0.42, AH * 0.62, 200, (150, 90, 40), 0.5)
-    return finish(img, seed=seed, vig=0.55)
+    hx, hy = AW * 0.60, AH * 0.24
+    # helicopter silhouette, readable against the sky
+    d.ellipse([hx - 96, hy - 30, hx + 96, hy + 30], fill=(178, 188, 200, 255))
+    d.polygon([(hx + 70, hy - 6), (hx + 250, hy - 26), (hx + 262, hy - 6),
+               (hx + 70, hy + 14)], fill=(178, 188, 200, 255))
+    d.polygon([(hx + 236, hy - 26), (hx + 268, hy - 96), (hx + 288, hy - 92),
+               (hx + 268, hy - 18)], fill=(178, 188, 200, 255))
+    d.line([hx - 210, hy - 56, hx + 210, hy - 56], fill=(210, 218, 228, 245), width=10)
+    d.line([hx, hy - 56, hx, hy - 26], fill=(210, 218, 228, 245), width=10)
+    d.line([hx - 60, hy + 26, hx - 96, hy + 62], fill=(178, 188, 200, 235), width=8)
+    d.line([hx + 30, hy + 26, hx + 10, hy + 62], fill=(178, 188, 200, 235), width=8)
+    img = B.light_cone(img, (hx, hy + 34), (AW * 0.36, AH * 0.88), (AW * 0.72, AH * 0.94),
+                       (190, 198, 176), alpha=130, blur=60)
+    img = B.add_glow(img, AW * 0.44, AH * 0.66, 260, (190, 110, 50), 0.65)
+    return finish(img, seed=seed, vig=0.44, bright=1.12)
 
 
 def dawn_rescue(seed=55):
@@ -1232,9 +1239,14 @@ def evidence_convergence(seed=67):
         y = AH * (0.22 + i * 0.14)
         d.rounded_rectangle([AW * 0.06, y - 46, AW * 0.42, y + 46], radius=14,
                             fill=(24, 32, 44, 235), outline=(*LINE, 170), width=4)
+        d.rectangle([AW * 0.06, y - 46, AW * 0.068, y + 46], fill=(*LINE, 220))
+        d.text((AW * 0.095, y), it, font=font(44, "bold"), fill=(*LINE, 240),
+               anchor="lm")
         d.line([AW * 0.43, y, cx - 130, cy + (y - cy) * 0.18], fill=(*LINE, 130), width=5)
     d.ellipse([cx - 130, cy - 130, cx + 130, cy + 130], fill=(30, 42, 56, 255),
               outline=(*AMB, 230), width=7)
+    d.text((cx, cy - 18), "同じ", font=font(46, "black"), fill=(*AMB, 245), anchor="mm")
+    d.text((cx, cy + 34), "方向", font=font(46, "black"), fill=(*AMB, 245), anchor="mm")
     img = B.add_glow(img, cx, cy, 300, (110, 80, 30), 0.5)
     return finish(img, seed=seed)
 
@@ -1242,11 +1254,15 @@ def evidence_convergence(seed=67):
 def rescue_critique(seed=68):
     img = board(seed)
     d = ImageDraw.Draw(img, "RGBA")
-    for i in range(4):
+    items = ["位置情報の混乱", "夜間の山岳救助の困難", "組織間の連絡",
+             "米軍支援をめぐる証言"]
+    for i, it in enumerate(items):
         y = AH * (0.26 + i * 0.15)
         d.rounded_rectangle([AW * 0.14, y - 52, AW * 0.86, y + 52], radius=14,
                             fill=(28, 26, 24, 220), outline=(*AMB, 150), width=4)
         d.rectangle([AW * 0.14, y - 52, AW * 0.155, y + 52], fill=(*AMB, 220))
+        d.text((AW * 0.19, y), it, font=font(52, "bold"), fill=(*PAPER, 240),
+               anchor="lm")
     img = corner_marks(img, "検証すべき問題", "RESCUE DELAY")
     return finish(img, seed=seed)
 
@@ -1270,10 +1286,32 @@ def gap_diagram(seed=69):
 
 
 def fuel_fire(seed=70):
+    """Fire on the ridge, kept as distant glow behind tree silhouettes."""
     img = ridge_night(seed + 5)
-    img = B.add_glow(img, AW * 0.46, AH * 0.60, AW * 0.30, (170, 80, 30), 0.7)
-    img = B.add_glow(img, AW * 0.56, AH * 0.62, AW * 0.18, (200, 110, 40), 0.55)
-    return finish(img, seed=seed, vig=0.5)
+    img = ImageEnhance.Brightness(img).enhance(1.15)
+    img = B.add_glow(img, AW * 0.46, AH * 0.62, AW * 0.26, (200, 96, 34), 0.85)
+    img = B.add_glow(img, AW * 0.58, AH * 0.64, AW * 0.15, (230, 140, 50), 0.7)
+    d = ImageDraw.Draw(img, "RGBA")
+    rng = np.random.default_rng(seed)
+    # foreground ridge + bare trees, so the glow reads as distance
+    pts = [(0, AH * 0.72)]
+    x = 0
+    while x < AW:
+        x += rng.uniform(160, 300)
+        pts.append((x, AH * (0.72 - rng.uniform(0.02, 0.09))))
+    pts += [(AW, AH * 0.72), (AW, AH), (0, AH)]
+    d.polygon(pts, fill=(7, 10, 14, 255))
+    for tx in np.linspace(-40, AW + 40, 22):
+        h = rng.uniform(AH * 0.10, AH * 0.24)
+        bx = tx + rng.uniform(-30, 30)
+        d.line([bx, AH * 0.74, bx, AH * 0.74 - h], fill=(6, 9, 12, 255),
+               width=int(rng.uniform(8, 18)))
+        for _ in range(3):
+            d.line([bx, AH * 0.74 - h * rng.uniform(0.5, 0.95),
+                    bx + rng.uniform(-70, 70), AH * 0.74 - h * rng.uniform(0.9, 1.25)],
+                   fill=(6, 9, 12, 255), width=6)
+    img = B.fog_bands(img, seed, 0.35, (90, 62, 44), y0=0.5)
+    return finish(img, seed=seed, vig=0.5, bright=1.08)
 
 
 def distrust_diagram(seed=71):
@@ -1284,9 +1322,15 @@ def distrust_diagram(seed=71):
         y = AH * (0.24 + i * 0.16)
         d.rounded_rectangle([AW * 0.08, y - 48, AW * 0.36, y + 48], radius=14,
                             fill=(26, 32, 44, 230), outline=(*STEEL, 170), width=4)
+        d.text((AW * 0.22, y), s, font=font(46, "bold"), fill=(*PAPER, 235),
+               anchor="mm")
         d.line([AW * 0.37, y, AW * 0.52, AH * 0.50], fill=(*STEEL, 120), width=5)
     d.rounded_rectangle([AW * 0.54, AH * 0.36, AW * 0.92, AH * 0.64], radius=20,
                         fill=(38, 24, 28, 235), outline=(*RED, 200), width=6)
+    d.text((AW * 0.73, AH * 0.46), "不信感", font=font(76, "black"),
+           fill=(*RED, 245), anchor="mm")
+    d.text((AW * 0.73, AH * 0.56), "一つの巨大な物語へ", font=font(42, "bold"),
+           fill=(*PAPER, 220), anchor="mm")
     img = B.add_glow(img, AW * 0.73, AH * 0.5, 340, (100, 34, 38), 0.45)
     return finish(img, seed=seed)
 
