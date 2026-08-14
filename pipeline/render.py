@@ -242,12 +242,15 @@ def concat():
 
 def final():
     ass = os.path.join(BUILD, "main.ass").replace("\\", "/")
-    run(["ffmpeg", "-y", "-i", MASTER, "-i", AUDIO_PATH,
+    mixed = os.path.join(BUILD, "audio_mix.m4a")
+    audio = mixed if os.path.exists(mixed) else AUDIO_PATH
+    acodec = ["-c:a", "copy"] if audio == mixed else ["-c:a", "aac", "-b:a", "192k"]
+    run(["ffmpeg", "-y", "-i", MASTER, "-i", audio,
          "-vf", f"eq=saturation=1.08:contrast=1.015,ass={ass}",
          "-c:v", "libx264", "-preset", "faster", "-crf", "21",
-         "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
-         "-movflags", "+faststart", "-shortest", FINAL])
-    print("final:", FINAL)
+         "-pix_fmt", "yuv420p"] + acodec +
+        ["-movflags", "+faststart", "-shortest", FINAL])
+    print("final:", FINAL, f"(audio: {os.path.basename(audio)})")
 
 
 def dist():

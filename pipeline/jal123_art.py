@@ -314,17 +314,20 @@ def tail_loss(seed=17):
 def hydraulic_diagram(seed=18):
     img = board(seed)
     d = ImageDraw.Draw(img, "RGBA")
-    b747_top(d, AW * 0.5, AH * 0.46, AW * 0.60, col=(30, 38, 50))
+    b747_top(d, AW * 0.5, AH * 0.46, AW * 0.60, col=(58, 70, 88))
     u = (AW * 0.60) / 100.0
     cx, cy = AW * 0.5, AH * 0.46
     cols = [(96, 200, 220), (120, 190, 240), (150, 200, 210), (110, 210, 190)]
     for i in range(4):
         off = (i - 1.5) * 5 * u
-        pts = [(cx + 44 * u, cy + off * 0.35), (cx + 4 * u, cy + off * 0.7),
+        pts = [(cx + 40 * u, cy + off * 0.35), (cx + 4 * u, cy + off * 0.7),
                (cx - 30 * u, cy + off), (cx - 44 * u, cy + off * 0.8)]
-        d.line(pts, fill=(*cols[i], 210), width=6, joint="curve")
-        d.text((cx + 48 * u, cy + off * 0.35), f"#{i + 1}", font=font(30, "bold"),
-               fill=(*cols[i], 230), anchor="lm")
+        d.line(pts, fill=(*cols[i], 230), width=7, joint="curve")
+        lx, ly = cx + 42 * u, cy + off * 0.35
+        d.rounded_rectangle([lx, ly - 24, lx + 88, ly + 24], radius=8,
+                            fill=(14, 20, 30, 220), outline=(*cols[i], 200), width=3)
+        d.text((lx + 44, ly), f"#{i + 1}", font=font(32, "bold"),
+               fill=(*cols[i], 245), anchor="mm")
     # severance point at the tail
     d.ellipse([cx - 52 * u, cy - 12 * u, cx - 34 * u, cy + 12 * u],
               outline=(*RED, 230), width=6)
