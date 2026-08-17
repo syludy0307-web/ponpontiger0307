@@ -4,12 +4,13 @@
 
 ## 0. 一言でいうと
 
-ユーザー（日本語話者）がフィリピンの法律解説TikTokシリーズを制作中。毎回「台本＋ナレーションmp3＋ASR生成の粗いSRT」を渡してくるので、**誤字修正→タイムライン設計→Canvasレンダラーでフル演出→効果音ミックス→MP4納品→リポジトリにpush** までを一気通貫でやる。**8本完成済み**。
+ユーザー（日本語話者）がフィリピンの法律解説TikTokシリーズを制作中。毎回「台本＋ナレーションmp3＋ASR生成の粗いSRT」を渡してくるので、**誤字修正→タイムライン設計→Canvasレンダラーでフル演出→効果音ミックス→MP4納品→リポジトリにpush** までを一気通貫でやる。**9本完成済み**。
 
 ## 1. リポジトリ状態
 
-- リポジトリ: `syludy0307-web/ponpontiger0307`／ブランチ: `claude/philippines-adultery-tiktok-cmfhcw`（全作業・push先）
-- 1動画=1ディレクトリ。完成8本：
+- リポジトリ: `syludy0307-web/ponpontiger0307`
+- ブランチ: **`claude/handoff-md-review-t8kkrs`**（現行の全作業・push先。#1〜8を作った `claude/philippines-adultery-tiktok-cmfhcw` をFFマージして引き継いだ）
+- 1動画=1ディレクトリ。完成9本：
 
 | # | ディレクトリ | テーマ | 尺 | 特徴 |
 |---|---|---|---|---|
@@ -21,6 +22,7 @@
 | 6 | philippines-ra9995 | RA9995盗撮・映像禁止法 | 52.0s | **合成SFX導入**(thump/shatter)・赤無音エンド |
 | 7 | philippines-land | 名義貸し土地(Frenzel v. Catito) | 60.0s | **ストーリー型4ハードカット**・shutter合成・NULL AND VOID |
 | 8 | philippines-estafa | エスタファ(315条) | 54.5s | **抑制演出版**（金色制限・単発ドン・白プログレスバー） |
+| 9 | philippines-ra10175 | RA10175 4条a項1号 不正アクセス | 49.0s | **引っ張り型**（前半白のみ→RGBグリッチで赤解禁）・写真7点・BGM段変更 |
 
 - 各ディレクトリ構成（共通）:
   - `timeline.js` … 単一ソース（sections / subs / sfxキュー / sfxGain）。rendererとmixerが共有
@@ -44,9 +46,9 @@ apt-get update && apt-get install -y ffmpeg fonts-noto-cjk fonts-noto-cjk-extra
 - ネットワークはプロキシ経由。**Wikimedia Commons API/画像は取得可能**（他のストックサイトは不可前提）
 - bashのcwdはコマンド間でリセットされることがある。**cdは毎コマンド絶対パスで**
 
-## 3. 制作フロー（次の動画=9本目のレシピ）
+## 3. 制作フロー（次の動画=10本目のレシピ）
 
-1. `mkdir philippines-XXX/assets` → アップロードされたmp3/srtをコピー、**既存プロジェクトからsfx6種+bgm.mp3+capture.cjsをコピー**（#8 philippines-estafa/assets が全部揃ってる）
+1. `mkdir philippines-XXX/assets` → アップロードされたmp3/srtをコピー、**既存プロジェクトからsfx6種+bgm.mp3+capture.cjsをコピー**（#9 philippines-ra10175/assets が全部揃ってる）
 2. `ffprobe` でナレーション長を測る → `DUR = ナレーション末尾 + 約1.4s`（60秒以内厳守）
 3. SRT誤字修正（§6参照）→ `subtitles_fixed.srt` 作成。キュー結合・アラビア数字化（2024年/131/4年2ヶ月）
 4. `timeline.js` 作成：sections（音声で区切る）/ subs（色分けセグメント）/ sfxキュー / sfxGain
@@ -73,6 +75,9 @@ apt-get update && apt-get install -y ffmpeg fonts-noto-cjk fonts-noto-cjk-extra
 - リサイズ≤1600px → **base64でphotos.jsに埋め込み**（file://のcanvas汚染回避。imgタグ直読みはtoDataURLが死ぬ）
 - クレジット焼き込み：パネル右下 or フルブリードは右上小 + エンドカードにまとめ行。PDはクレジット任意
 - 実績素材: マカティ夜景(CC0) / 最高裁ファサード(CC BY-SA4.0 Patrickroque01, fy:.16でSUPREME COURT文字が入る) / 国旗(CC BY-SA4.0) / 刑務所鉄条網(CC BY2.0) / 下院本会議場(PD) / マニラ大聖堂(CC BY4.0) / PAL機(CC BY-SA3.0)
+- #9で追加: フィリピン共和国紋章 BATAS AT BAYAN(PD/NHCP・条文シーンに強い) / データセンター青ラック(CC BY-SA3.0 BalticServers・サイバー感) / 配線クローゼット(PD) / 牢の鉄格子(CC BY2.0 Matt Brown) / 手錠(CC0) / マニラ夜景(CC BY-SA3.0 Spearminttt) / iPhone実機(CC BY-SA2.0)
+- **#9のfetch_photos.cjsが最新版**（keyごとに候補クエリを多段フォールバック / DL後にマジックバイト検証 / `ONLY=phone,keypad` で一部だけ取り直し / base64化まで一括）。Commons APIは連続だと429を返すので候補が多いほど安全
+- 検索ワードは当たり外れが大きい。`smartphone in hand` → ポインセチアの赤外線写真、`PIN pad` → ドイツの黒電話、が実際に来た。**必ずモンタージュを作って目視**（ffmpegで個別`-i`＋hstack/vstack。`-pattern_type glob`＋`tile`はサイズ違いで壊れる）
 - 人物が特定できる写真はデリケート題材では使わない。台本が図解指定(#8)なら写真なしでOK
 
 ## 6. 音声システム
@@ -91,7 +96,9 @@ apt-get update && apt-get install -y ffmpeg fonts-noto-cjk fonts-noto-cjk-extra
 
 ## 7. SRT修正の頻出パターン（毎回必ず全文チェック）
 
-貫通罪→姦通罪 / 商材・妾罪 / ネタだけ→寝ただけ / 聞こんな→既婚の / ra九千九百九十五→RA9995 / バーチカン四国→バチカン市国 / 履行→離婚 / 簡易→下院 / 乗員→上院 / 人気切れで敗案→任期切れで廃案 / 口紅→口笛 / バールバスト四→バワル・バストス法 / 初版→初犯 / 重厚→受講 / 契機→刑期 / 外人→外国人 / 向こう→無効 / 名義菓子→名義貸し / 七円→7年 / 聖烈→成立 / 学位→学費 / 返済→転載 / 貸される→科される / 性交流→性行為 など。**法律用語・数字は特に注意**
+貫通罪→姦通罪 / 商材・妾罪 / ネタだけ→寝ただけ / 聞こんな→既婚の / ra九千九百九十五→RA9995 / バーチカン四国→バチカン市国 / 履行→離婚 / 簡易→下院 / 乗員→上院 / 人気切れで敗案→任期切れで廃案 / 口紅→口笛 / バールバスト四→バワル・バストス法 / 初版→初犯 / 重厚→受講 / 契機→刑期 / 外人→外国人 / 向こう→無効 / 名義菓子→名義貸し / 七円→7年 / 聖烈→成立 / 学位→学費 / 返済→転載 / 貸される→科される / 性交流→性行為 / 手元を結び見た→手元を盗み見た / ケイは六年一日→刑は6年1日 / 四条a一号→4条a項1号 など。**法律用語・数字は特に注意**
+
+判断ルール（#9で確立）: **ASRが自然な日本語を出していて台本と意味が同じならASR準拠**（音声と字幕を一致させる方が優先。例「許可じゃない」台本 vs「許可ではない」ASR → ASR採用）。**壊れている／法律用語・数字を誤変換している場合は台本・正表記に修正**。意味が変わる箇所は台本準拠（例「スマホを見た」ASR → 「スマホを開けた」台本。後半の「開いた時点で終わり」に接続するため）
 
 ## 8. ユーザーの好み・作法（重要）
 
