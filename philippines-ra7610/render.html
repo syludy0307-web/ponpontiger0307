@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>RA7610 / Bongalon — Renderer</title>
+<style>html,body{margin:0;padding:0;background:#000;overflow:hidden}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="timeline.js"></script>
+<script src="assets/img/photos.js"></script>
+<script src="lib/core.js"></script>
+<script src="lib/typography.js"></script>
+<script src="lib/facecam.js"></script>
+<script src="lib/broll.js"></script>
+<script src="lib/legal.js"></script>
+<script src="lib/illustration.js"></script>
+<script>
+'use strict';
+const TL = window.TIMELINE, W = TL.W, H = TL.H;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const C = window.CORE, T = window.TYPO, FC = window.FACECAM, BR = window.BROLL,
+      LG = window.LEGAL, IL = window.ILLUST;
+C.bind(ctx);
+
+const clamp = C.clamp, lerp = C.lerp, prog = C.prog, popIn = C.popIn, win = C.win;
+const eOutCubic = C.easeOutCubic, eInOut = C.easeInOut, eInQuad = C.easeInQuad;
+
+// ---------- インパクト定義（揺れ／フラッシュ／破片／ズーム）----------
+C.addImpacts([
+  { t: 0.19,  amp: 20, fl: { c: '255,255,255', a: .16, d: .13 }, zoom: .06 },
+  { t: 2.42,  amp: 6 },
+  { t: 3.02,  amp: 15, fl: { c: '255,255,255', a: .30, d: .10 } },
+  { t: 10.30, amp: 10, fl: { c: '255,255,255', a: .22, d: .12 } },
+  { t: 10.64, amp: 6,  fl: { c: '255,255,255', a: .13, d: .08 } },
+  { t: 11.00, amp: 6,  fl: { c: '255,255,255', a: .13, d: .08 } },
+  { t: 11.76, amp: 12 },
+  { t: 13.55, amp: 26, fl: { c: '255,66,52', a: .28 }, zoom: .05,
+    bu: { x: 540, y: 800, cols: ['#FF5A4E', '#fff'], n: 26, sp: 820 } },
+  { t: 15.14, amp: 26, fl: { c: '255,66,52', a: .28 }, zoom: .05,
+    bu: { x: 540, y: 1060, cols: ['#FF5A4E', '#fff'], n: 26, sp: 820 } },
+  { t: 16.88, amp: 13 }, { t: 18.10, amp: 13 }, { t: 19.35, amp: 10 },
+  { t: 23.92, amp: 18, fl: { c: '255,66,52', a: .20 } },
+  { t: 25.12, amp: 10, fl: { c: '255,255,255', a: .16, d: .10 } },
+  { t: 26.82, amp: 9,  fl: { c: '255,255,255', a: .12, d: .08 } },
+  { t: 28.62, amp: 9,  fl: { c: '255,255,255', a: .12, d: .08 } },
+  { t: 30.22, amp: 16 },
+  { t: 31.32, amp: 24, fl: { c: '255,66,52', a: .26 }, zoom: .04,
+    bu: { x: 540, y: 820, cols: ['#FF5A4E', '#fff'], n: 24, sp: 780 } },
+  { t: 32.64, amp: 16, fl: { c: '255,255,255', a: .30, d: .12 } },
+  { t: 34.15, amp: 24, fl: { c: '111,210,255', a: .26 }, zoom: .06,
+    bu: { x: 540, y: 900, cols: ['#6FD2FF', '#fff'], n: 26, sp: 820 } },
+  { t: 36.10, amp: 20, fl: { c: '255,207,63', a: .18 }, zoom: .05 },
+  { t: 44.96, amp: 14 },
+  { t: 48.20, amp: 8 },
+  { t: 49.72, amp: 30, fl: { c: '255,66,52', a: .34 }, zoom: .10,
+    bu: { x: 540, y: 1080, cols: ['#FF5A4E', '#fff', '#FFC933'], n: 34, sp: 960 } },
+]);
+
+// ========== 【1】HOOK ==========
+// 4条件チップ（左右分割 → 2×2グリッド）
+const COND = [
+  { txt: '1回だけ',  x: 280, y: 902,  tIn: 4.52, tOk: 4.60 },
+  { txt: '怪我なし', x: 700, y: 902,  tIn: 5.82, tOk: 5.90 },
+  { txt: 'しつけ',   x: 280, y: 1032, tIn: 7.28, tOk: 7.36 },
+  { txt: '謝罪',     x: 700, y: 1032, tIn: 8.86, tOk: 8.94 },
+];
+function sceneHook(t) {
+  // 2.37-3.06 は再現イラストへハードカット（手が上がるまででCUT）
+  if (t >= 2.37 && t < 3.06) {
+    C.ambientBG(t, 'dark'); IL.handRaise(t, 2.42); C.vignette(.55);
+  } else if (t >= 3.06 && t < 3.28) {
+    ctx.fillStyle = '#04050B'; ctx.fillRect(0, 0, W, H);        // CUT（黒）
+  } else {
+    let zoom = 1;
+    if (t < 0.55) zoom = lerp(1.34, 1.0, eOutCubic(prog(t, 0, .55)));  // 高速ズームイン
+    if (t >= 3.28) zoom = lerp(1.10, 1.0, eOutCubic(prog(t, 3.28, .5)));
+    FC.draw(t, { section: 'hook', shot: t < 1.5 ? 'closeup' : 'mid', zoom, t0: 0, fy: .52 });
+  }
+  // テロップ
+  if (t < 2.05) T.mega([{ txt: '彼女の子どもを叱った', size: 92, y: 806, fill: 'white' }],
+    { t, t0: 0.19, in: 'slam', outT: 1.80, maxW: 860 });
+  if (t >= 3.28 && t < 4.42) T.mega([{ txt: '手が出た', size: 132, y: 812, fill: 'white' }],
+    { t, t0: 3.30, in: 'punch', outT: 4.22 });
+  // 分割線（1回だけ / 怪我なし の左右分割を示す）
+  const dv = win(t, 4.52, 7.20, .2, .3);
+  if (dv > 0) {
+    ctx.save(); ctx.globalAlpha = dv * .45; ctx.strokeStyle = 'rgba(220,228,255,0.9)';
+    ctx.lineWidth = 3; ctx.setLineDash([14, 12]);
+    ctx.beginPath(); ctx.moveTo(W / 2, 838); ctx.lineTo(W / 2, 968); ctx.stroke();
+    ctx.setLineDash([]); ctx.restore();
+  }
+  for (const c of COND) T.condChip(t, { ...c, scale: .96 });
+  // 「じゃあ大丈夫？」の空気 → 急に暗転方向へ
+  if (t > 9.30) {
+    const p = prog(t, 9.30, .98);
+    ctx.fillStyle = `rgba(3,4,10,${p * .62})`; ctx.fillRect(0, 0, W, H);
+    C.vignette(.5 + p * .35);
+  }
+}
+
+// ========== 【2】RA7610 ==========
+function sceneLaw(t) {
+  // 高速モンタージュ（国旗 → 法律文書 → 裁判所）
+  if (t < 10.64) { BR.flag(t, 10.30, .34); }
+  else if (t < 11.00) {
+    C.ambientBG(t, 'law');
+    LG.ra7610Doc(t, { t: t, t0: 10.64, x: W / 2, y: 940, scale: 1.02, rot: .02 });
+    C.vignette(.5);
+  } else if (t < 11.42) {
+    BR.courthouse(t, { t0: 11.00, t1: 11.42, fy: .16, z0: 1.14, z1: 1.26 });
+  } else {
+    C.ambientBG(t, 'law');
+    // 条文カード（Sec.10(a) をマーカー）
+    LG.ra7610Doc(t, {
+      t, t0: 11.94, x: W / 2, y: 1160, scale: .80, hlT: 12.46,
+      penT: t > 13.4 ? 13.42 : undefined, outT: 13.30,
+    });
+    C.vignette(.5);
+  }
+  // 見出し
+  if (t >= 11.42 && t < 13.34) {
+    T.mega([{ txt: 'RA 7610', size: 138, y: 566, fill: 'gold' }],
+      { t, t0: 11.76, in: 'slam', outT: 13.24, still: true });
+    T.pill(t, 11.98, W / 2, 706, '児童保護法', 50, C.COL.g, '#fff', { outT: 13.26 });
+  }
+  // 刑（最初の大インパクト）
+  if (t >= 13.40) {
+    T.mega([{ txt: '6年1日', size: 176, y: 776, fill: 'red' }], { t, t0: 13.55, in: 'slam' });
+    if (t > 14.86) T.mega([{ txt: 'から', size: 54, y: 906, fill: 'white' }], { t, t0: 14.88, in: 'rise', still: true });
+    if (t > 15.10) T.mega([{ txt: '8年', size: 204, y: 1042, fill: 'red' }], { t, t0: 15.14, in: 'slam' });
+    if (t > 15.58) LG.penaltyBar(t, { t, t0: 15.60, y: 1204, from: '6年1日', to: '8年' });
+    if (t > 13.92) {
+      ctx.save(); ctx.globalAlpha = C.fadeIn(t, 13.92, .4) * .78;
+      C.label('RA 7610  Sec. 10 (a) ／ prisión mayor 最短期', W / 2, 1296, 27, 'rgba(226,232,248,0.9)', 'center', 700);
+      ctx.restore();
+    }
+  }
+}
+
+// ========== 【3】条文はそこを見ていない ==========
+const COND2 = [
+  { txt: '1回だけ',  y: 748,  tNg: 16.88 },
+  { txt: '怪我なし', y: 872,  tNg: 18.10 },
+  { txt: 'しつけ',   y: 996,  tNg: 19.35 },
+  { txt: '謝罪',     y: 1120, tNg: 23.92 },
+];
+function sceneDeny(t) {
+  // Stage B：言葉だけでも成立する（ハードカットで別画）
+  if (t >= 20.90 && t < 22.66) {
+    C.ambientBG(t, 'dark');
+    IL.words(t, 20.96);
+    C.vignette(.5);
+    T.note(t, 21.30, '※内容・状況等により判断されます', 1566);
+    return;
+  }
+  FC.draw(t, { section: 'deny', shot: 'mid', dark: .22, t0: 16.25, fy: .5 });
+  // 4条件を再表示 → 順に×
+  for (let i = 0; i < COND2.length; i++) {
+    const c = COND2[i];
+    T.condChip(t, {
+      txt: c.txt, x: 292, y: c.y, w: 350, scale: .78,
+      tIn: 16.30 + i * .06, tOk: 16.30 + i * .06, tNg: c.tNg,
+    });
+  }
+  // 条文（右側・セーフゾーン内）
+  if (t >= 19.02 && t < 20.86) {
+    LG.ra7610Doc(t, { t, t0: 19.04, x: 706, y: 1010, scale: .50, hlT: 19.30, outT: 20.66 });
+    T.pill(t, 19.40, 706, 1268, '条文が見るのはココ', 34, C.COL.g, '#fff', { outT: 20.66, pad: 70 });
+  }
+  // Stage C：謝罪は要件じゃない
+  if (t >= 22.72) {
+    const p = popIn(t, 22.86, .22);
+    if (p > 0) {
+      ctx.save(); ctx.translate(706, 900); ctx.scale(p, p);
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'; C.rr(-234, -122, 470, 250, 26); ctx.fill();
+      ctx.fillStyle = '#F2F5FF'; C.rr(-240, -130, 470, 250, 26); ctx.fill();
+      C.label('SORRY', 0, -34, 62, '#1B2340', 'center', 900);
+      C.label('ごめん、悪かった', 0, 46, 32, '#5A6178', 'center', 700);
+      ctx.restore();
+    }
+    T.bigX(t, 23.92, 706, 920, 248);
+    if (t > 24.34) T.pill(t, 24.36, 706, 1180, '要件じゃない', 44, C.COL.r, C.COL.r, { pad: 80 });
+  }
+}
+
+// ========== 【4】Bongalon事件 ==========
+function sceneCase(t) {
+  if (t < 30.06) {
+    if (t >= 26.76) { C.ambientBG(t, 'case'); BR.courtroom(t, .72); }
+    else BR.courtroom(t, .18);
+    // 再現カット（接触は描かない）
+    if (t >= 26.82 && t < 28.56) IL.reenact(t, 26.84, 'back');
+    if (t >= 28.62 && t < 30.02) IL.reenact(t, 28.64, 'cheek');
+    if (t < 26.76) {
+      // 男のシルエット（特定人物にしない）
+      const p = popIn(t, 25.60, .3);
+      ctx.save(); ctx.globalAlpha = p;
+      ctx.translate(730, 1338); ctx.scale(.86, .86); ctx.translate(-730, -1338);
+      IL.adult(t, 730, 1338, 1.0, .12, '#161E33');
+      ctx.restore();
+    }
+    LG.caseFile(t, { t, tFile: 25.32, tName: 25.68, tGr: 26.12, tDate: 26.46, outT: 29.96 });
+    C.vignette(.55);
+  } else if (t < 32.60) {
+    // 地裁の判決
+    C.ambientBG(t, 'case'); BR.courtroom(t, .5);
+    T.pill(t, 30.18, W / 2, 640, '地方裁判所', 46, 'rgba(255,255,255,0.8)', '#fff', { outT: 32.48 });
+    LG.gavel(t, 30.24, 400, 1180, 1.0);
+    LG.judgment(t, 30.90, 760, 1170, .88, 'DECISION', 32.48);
+    if (t > 31.28) {
+      T.mega([{ txt: '6年1日 〜 8年', size: 118, y: 852, fill: 'red' }], { t, t0: 31.32, in: 'slam', outT: 32.46 });
+      LG.penaltyBar(t, { t, t0: 31.56, y: 990, from: '6年1日', to: '8年', outT: 32.46 });
+    }
+    C.vignette(.5);
+  } else if (t < 33.12) {
+    // 第二折り返し：フリーズ＋RECORD SCRATCH
+    C.ambientBG(t, 'dark');
+    ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(0, 0, W, H);
+    T.mega([{ txt: 'ところが', size: 156, y: 900, fill: 'white' }], { t, t0: 32.66, in: 'slam', still: true });
+  } else {
+    // 最高裁 → 10日
+    BR.courthouse(t, { t0: 33.12, t1: 35.40, fy: .16, z0: 1.30, z1: 1.12,
+      tintTop: 'rgba(6,10,24,0.60)', tintBot: 'rgba(6,10,24,0.90)' });
+    T.pill(t, 33.18, W / 2, 604, 'SUPREME COURT', 44, C.COL.b, '#fff', { outT: 35.30, pad: 90 });
+    // 刑期バーが一気に縮む
+    LG.penaltyBar(t, { t, t0: 33.20, y: 1210, from: '6年1日', to: '8年', shrinkT: 33.30 });
+    // 数字が高速で減少（年のまま8→1）→ 10日 に着地
+    if (t < 34.15) {
+      T.counter(t, 33.30, .70, 8, 1, W / 2, 900, 150, 'white', v => Math.max(1, Math.round(v)) + '年', 'out');
+    } else {
+      T.mega([{ txt: '10日', size: 250, y: 900, fill: 'blue' }], { t, t0: 34.15, in: 'slam' });
+      if (t > 34.60) T.pill(t, 34.62, W / 2, 1092, '拘留10日（arresto menor）', 40, C.COL.b, '#fff', { pad: 84 });
+    }
+  }
+}
+
+// ========== 【5】意図 ==========
+function sceneIntent(t) {
+  if (t < 37.06) {
+    // 一瞬静かにする
+    FC.draw(t, { section: 'intent', shot: 'closeup', dark: .42, t0: 35.40, fy: .46,
+      zoom: lerp(1.0, 1.05, prog(t, 35.40, 1.6)) });
+    if (t > 36.06) T.mega([{ txt: '意図', size: 264, y: 900, fill: 'gold' }], { t, t0: 36.10, in: 'slam' });
+  } else if (t < 40.55) {
+    C.ambientBG(t, 'dark');
+    IL.child(t, W / 2, 1276, 1.28, '#0C1224');
+    // 子どもを取り囲む3語
+    IL.degradeWords(t, [37.62, 38.06, 38.50]);
+    if (t > 38.92) T.mega([{ txt: '尊厳を貶める意図', size: 84, y: 690, fill: 'gold' }],
+      { t, t0: 38.96, in: 'pop', maxW: 860 });
+    if (t > 39.60) T.pill(t, 39.64, W / 2, 1450, 'それだけを見る', 40, 'rgba(255,255,255,0.7)', '#fff', { pad: 80 });
+    C.vignette(.55);
+  } else {
+    C.ambientBG(t, t > 44.90 ? 'red' : 'dark');
+    // Bongalonが外れた理由
+    if (t < 43.05) {
+      T.pill(t, 40.66, W / 2, 780, 'spur of the moment', 52, C.COL.b, C.COL.b, { pad: 96, font: C.SERIF });
+      if (t > 41.30) {
+        ctx.save(); ctx.globalAlpha = C.fadeIn(t, 41.32, .3);
+        C.label('とっさ・怒りの延長', W / 2, 884, 34, 'rgba(226,232,248,0.85)', 'center', 700);
+        ctx.restore();
+      }
+      if (t > 41.78) T.pill(t, 41.82, W / 2, 1010, 'Bongalon case', 46, 'rgba(255,255,255,0.75)', '#fff', { pad: 90, font: C.SERIF });
+      if (t > 42.20) T.note(t, 42.24, '※成立は行為・状況・意図など個別事情で判断', 1566);
+    } else {
+      // 繰り返し（自動的に有罪、という表現はしない）
+      IL.repeatStack(t, [43.16, 43.76, 44.36]);
+      if (t > 44.92) T.mega([{ txt: '繰り返し', size: 150, y: 700, fill: 'red' }], { t, t0: 44.96, in: 'slam' });
+      T.note(t, 43.30, '※成立は行為・状況・意図など個別事情で判断', 1566);
+    }
+    C.vignette(.55);
+    if (t > 44.90) { ctx.fillStyle = `rgba(120,10,16,${prog(t, 44.90, .82) * .30})`; ctx.fillRect(0, 0, W, H); }
+  }
+}
+
+// ========== 【6】オチ ==========
+function scenePunch(t) {
+  const zoom = t < 48.20 ? lerp(1.0, 1.06, prog(t, 45.72, 2.4))
+    : lerp(1.10, 1.30, prog(t, 48.20, 3.4));
+  FC.draw(t, { section: 'punch', shot: 'closeup', dark: .48, t0: 45.72, fy: .5, zoom });
+  ctx.fillStyle = `rgba(90,8,12,${0.10 + 0.16 * Math.sin(t * 3)})`; ctx.fillRect(0, 0, W, H);
+  if (t < 51.20) {
+    if (t < 48.10) T.mega([{ txt: 'しつけのつもりでも', size: 78, y: 830, fill: 'white' }],
+      { t, t0: 46.10, in: 'rise', outT: 47.96, maxW: 840 });
+    if (t >= 48.46 && t < 49.72) T.mega([{ txt: '叩かれるのは', size: 134, y: 900, fill: 'white' }],
+      { t, t0: 48.56, in: 'punch' });
+    if (t >= 49.70) {
+      ctx.fillStyle = `rgba(0,0,0,${prog(t, 49.72, .5) * .72})`; ctx.fillRect(0, 0, W, H);  // 背景暗転
+      T.mega([{ txt: '叩かれるのは', size: 78, y: 800, fill: 'white' }], { t, t0: 49.72, in: 'rise', still: true, alpha: .9 });
+      T.mega([{ txt: 'あなただ。', size: 268, y: 1050, fill: 'red' }], { t, t0: 49.74, in: 'slam' });
+    }
+  }
+  // エンドカード（0.8秒・小さく／§14 長いエンディングは付けない）
+  if (t >= 51.20) {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalAlpha = C.fadeIn(t, 51.22, .22);
+    C.label('RA 7610 ／ Bongalon v. People（G.R. No. 169533）', W / 2, 892, 33, 'rgba(238,242,255,0.95)', 'center', 900);
+    C.label('※個別のケースは現地の弁護士にご確認ください', W / 2, 960, 25, 'rgba(200,208,232,0.78)', 'center', 600);
+    C.label('Photos: Wikimedia Commons — Patrickroque01, Roel Balingit (CC BY-SA 4.0) / lumoplank (CC0)',
+      W / 2, 1024, 18, 'rgba(180,190,215,0.58)', 'center', 500);
+    ctx.restore();
+  }
+}
+
+// ========== 字幕（§6/§19：中央〜中央下・TikTok UI回避）==========
+function drawSubs(t) {
+  for (const s of TL.subs) {
+    if (t < s.s || t > s.e + .12) continue;
+    const n = s.lines.length;
+    const fade = t > s.e ? clamp(1 - (t - s.e) / .12, 0, 1) : 1;
+    // 読みやすさ用の薄い帯（真っ黒の箱にはしない）
+    ctx.save();
+    const bandY = n === 1 ? 1372 : 1318;
+    const bandH = n === 1 ? 120 : 224;
+    const g = ctx.createLinearGradient(0, bandY - 40, 0, bandY + bandH + 40);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.5, 'rgba(0,0,0,0.46)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.globalAlpha = fade; ctx.fillRect(0, bandY - 40, W, bandH + 80);
+    ctx.restore();
+    for (let i = 0; i < n; i++) {
+      const y = n === 1 ? 1432 : 1382 + i * 104;
+      C.segText(s.lines[i], {
+        y, size: n === 1 ? 60 : 56, t0: s.s + i * .12, t,
+        strokeW: 13, alpha: fade, maxW: 900, stagger: .016, popDur: .13,
+      });
+    }
+  }
+}
+
+// ========== 上部バッジ・進行バー ==========
+function drawBadge(t) {
+  if (t < 10.28) return;                       // フックは何も出さない
+  const p = clamp((t - 10.28) / .32, 0, 1);
+  const y = lerp(-70, 152, C.easeOutBack(p));
+  ctx.save(); ctx.translate(W / 2, y + Math.sin(t * 1.9) * 3);
+  ctx.font = `900 40px ${C.SANS}`;
+  const txt = 'RA 7610｜フィリピン児童保護法';
+  const w = ctx.measureText(txt).width + 110;
+  ctx.fillStyle = 'rgba(5,7,18,0.8)'; C.rr(-w / 2, -40, w, 80, 40); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,207,63,0.85)'; ctx.lineWidth = 4; C.rr(-w / 2, -40, w, 80, 40); ctx.stroke();
+  C.label(txt, 0, 2, 40, '#fff', 'center', 900);
+  ctx.restore();
+}
+function drawProgress(t) {
+  ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fillRect(0, 0, W, 8);
+  ctx.fillStyle = 'rgba(240,244,255,0.8)'; ctx.fillRect(0, 0, W * clamp(t / TL.DUR, 0, 1), 8);
+}
+
+// ========== メイン ==========
+function currentSection(t) {
+  for (const s of TL.sections) if (t >= s.s && t < s.e) return s;
+  return TL.sections[TL.sections.length - 1];
+}
+window.renderFrame = function (t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
+
+  // 台本指定の黒（BGMも同時に停止：mix.cjs側）
+  if (t >= TL.BLACK.s && t < TL.BLACK.e) {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    return;
+  }
+
+  const sec = currentSection(t);
+  const off = C.shakeOffset(t), z = C.shakeZoom(t);
+  ctx.save();
+  ctx.translate(W / 2, H / 2); ctx.scale(z, z); ctx.translate(-W / 2, -H / 2);
+  ctx.translate(off.x, off.y);
+  if (sec.id === 'hook') sceneHook(t);
+  else if (sec.id === 'law') sceneLaw(t);
+  else if (sec.id === 'deny') sceneDeny(t);
+  else if (sec.id === 'case') sceneCase(t);
+  else if (sec.id === 'intent') sceneIntent(t);
+  else scenePunch(t);
+  C.drawBursts(t);
+  ctx.restore();
+
+  if (t < 51.22) { drawSubs(t); drawBadge(t); drawProgress(t); }
+  C.drawFlashes(t);
+  C.grain(t, .042);
+  if (t < .22) { ctx.fillStyle = `rgba(0,0,0,${1 - t / .22})`; ctx.fillRect(0, 0, W, H); }
+  if (t > 51.86) { ctx.fillStyle = `rgba(0,0,0,${clamp((t - 51.86) / .14, 0, 1)})`; ctx.fillRect(0, 0, W, H); }
+};
+
+// ========== 起動 ==========
+(async () => {
+  const loads = [`900 100px ${C.SANS}`, `700 60px ${C.SANS}`, `900 100px ${C.SERIF}`]
+    .map(f => document.fonts.load(f, '児童保護法意図尊厳貶叩拘留判決繰返'));
+  try { await Promise.all(loads); await document.fonts.ready; } catch (e) {}
+  const imgs = {};
+  await Promise.all(Object.entries(window.PHOTOS || {}).map(([k, src]) => new Promise(res => {
+    const im = new Image(); im.onload = () => { imgs[k] = im; res(); }; im.onerror = () => res(); im.src = src;
+  })));
+  C.setImages(imgs);
+  window.renderFrame(0);
+  window.READY = true;
+})();
+</script>
+</body>
+</html>
