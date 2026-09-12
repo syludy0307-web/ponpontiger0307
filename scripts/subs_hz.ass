@@ -1,0 +1,22 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 720
+PlayResY: 1280
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+YCbCr Matrix: TV.709
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Pink,Noto Sans CJK JP,68,&H00AF5FFF,&H00AF5FFF,&H00201A1A,&H90000000,-1,0,0,0,100,100,0,0,1,6,4,2,28,28,105,1
+Style: Gold,Noto Sans CJK JP,60,&H004AC2FF,&H004AC2FF,&H00201A1A,&H90000000,-1,0,0,0,100,100,0,0,1,6,4,2,28,28,105,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.62,0:00:01.70,Pink,,0,0,0,,{\fad(150,150)}もうダメ
+Dialogue: 0,0:00:06.50,0:00:08.80,Gold,,0,0,0,,{\fad(150,150)}Are you okay?\NAre you hurt?
+Dialogue: 0,0:00:10.70,0:00:12.10,Pink,,0,0,0,,{\fad(150,150)}え？何？
+Dialogue: 0,0:00:12.15,0:00:14.30,Pink,,0,0,0,,{\fad(150,150)}英語わからない
+Dialogue: 0,0:00:15.10,0:00:16.90,Pink,,0,0,0,,{\fad(150,150)}助けてくれるの？
+Dialogue: 0,0:00:27.04,0:00:28.30,Pink,,0,0,0,,{\fad(150,150)}ゾンビか
+Dialogue: 0,0:00:28.46,0:00:30.00,Pink,,0,0,0,,{\fad(150,150)}何が言いたいのよ
