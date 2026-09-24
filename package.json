@@ -1,0 +1,31 @@
+{
+  "name": "philippines-trivia-dance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "踊るフィリピン豆知識 — 15秒ダンス×豆知識 縦型ショート (Remotion)",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio",
+    "stills": "node scripts/stills.mjs",
+    "render": "node scripts/render.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@remotion/bundler": "4.0.527",
+    "@remotion/cli": "4.0.527",
+    "@remotion/fonts": "4.0.527",
+    "@remotion/media-parser": "4.0.527",
+    "@remotion/renderer": "4.0.527",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.527"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

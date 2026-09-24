@@ -1,0 +1,10 @@
+node_modules/
+out/
+.DS_Store
+
+# 素材と書き出し結果(大きいファイル・人物の映像はリポジトリに入れない)
+public/input/*
+!public/input/README.md
+output/*.mp4
+output/*.mp4.*
+output/previews/
