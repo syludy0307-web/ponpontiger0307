@@ -7,8 +7,8 @@ import path from 'node:path';
 
 const PREVIEWS = [
   {sec: 1.0, file: 'preview_01_quiz_1.0s.png'}, // 質問の読みやすさ
-  {sec: 4.4, file: 'preview_02_answer_4.4s.png'}, // 答えと集中線の見え方
-  {sec: 9.0, file: 'preview_03_comfort-room_9.0s.png'}, // Comfort Room の綴りと配色
+  {sec: 4.4, file: 'preview_02_answer_4.4s.png'}, // 答えとアイコン(集中線は 4.00〜4.35秒)
+  {sec: 9.0, file: 'preview_03_explain_9.0s.png'}, // 解説(September の綴りと配色)
   {sec: 13.0, file: 'preview_04_recap_13.0s.png'}, // 復習テロップの配置
 ];
 
@@ -18,7 +18,7 @@ const extraFrames = process.argv.slice(2).map(Number).filter(Number.isFinite);
 
 const serveUrl = await bundle({entryPoint: path.resolve('src/index.ts')});
 const browser = await openBrowser('chrome', {browserExecutable});
-const composition = await selectComposition({serveUrl, id: 'PhilippinesCR', puppeteerInstance: browser});
+const composition = await selectComposition({serveUrl, id: 'DanceTrivia', puppeteerInstance: browser});
 
 const jobs = extraFrames.length
   ? extraFrames.map((frame) => ({frame, file: path.join('extra', `frame_${String(frame).padStart(3, '0')}.png`)}))

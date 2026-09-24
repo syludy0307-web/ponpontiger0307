@@ -30,9 +30,9 @@ export const QuestionMark: React.FC<Props> = ({frame, start, side, tilt, highlig
     <div
       style={{
         position: 'absolute',
-        top: -size * 0.28,
+        top: size * 0.03,
         [side === 'right' ? 'left' : 'right']: '100%',
-        [side === 'right' ? 'marginLeft' : 'marginRight']: size * 0.06,
+        [side === 'right' ? 'marginLeft' : 'marginRight']: size * 0.2,
         transform: `rotate(${tilt + wiggle}deg) scale(${scale})`,
         transformOrigin: '50% 80%',
         opacity,

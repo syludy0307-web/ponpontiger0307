@@ -1,5 +1,5 @@
 // 完成動画を書き出す: npm run render
-// 出力: output/philippines_cr_dance_15s.mp4
+// 出力: src/config.ts の output.file(今回は output/philippines_christmas_dance_15s.mp4)
 //       1080x1920 / 30fps / H.264 yuv420p CRF18 / AAC 192kbps / faststart
 //
 // 手順
@@ -14,7 +14,6 @@ import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import ts from 'typescript';
 
-const OUT = 'output/philippines_cr_dance_15s.mp4';
 const VIDEO_ONLY = 'output/.video_only.mp4';
 const isWin = process.platform === 'win32';
 
@@ -71,11 +70,13 @@ const topLevelBoxes = (file) => {
 };
 
 const config = await loadConfig();
+const OUT = config.output.file;
 const input = path.join('public', config.video.src);
-mkdirSync('output', {recursive: true});
+mkdirSync(path.dirname(OUT), {recursive: true});
+mkdirSync(path.dirname(VIDEO_ONLY), {recursive: true});
 
 // 1. 映像(テロップ合成済み・音声なし)
-npx(['remotion', 'render', 'src/index.ts', 'PhilippinesCR', VIDEO_ONLY, '--muted']);
+npx(['remotion', 'render', 'src/index.ts', 'DanceTrivia', VIDEO_ONLY, '--muted']);
 
 // 2. 元動画の音声を同じ区間で合わせる(音声が無い素材なら無音のまま)
 const duration = npx(['remotion', 'ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', VIDEO_ONLY], {

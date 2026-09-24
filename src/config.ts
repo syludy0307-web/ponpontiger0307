@@ -1,5 +1,5 @@
 /**
- * 踊るフィリピン豆知識 #01「CRって何？」— 編集用の設定ファイル
+ * 踊るフィリピン豆知識 #01「フィリピンのクリスマスはいつから？」— 編集用の設定ファイル
  *
  * 素材・区間・文言・切り替えタイミング・文字サイズ・位置・色は、すべてここで変更できます。
  * 座標はすべて 1080x1920 の完成画面上の px です。
@@ -10,9 +10,9 @@ export type Segment = {
   text: string;
   /** 強調色(黄色)にする */
   highlight?: boolean;
-  /** 登場直後に軽く弾ませる(クイズの「CR」) */
+  /** 登場直後に軽く弾ませる(クイズの「いつ」) */
   bounce?: boolean;
-  /** 黄色い下線を左から右へ引く(略語説明の「C」「R」) */
+  /** 黄色い下線を左から右へ引く(解説の「ber」) */
   underline?: boolean;
 };
 export type RichLine = Segment[];
@@ -36,46 +36,50 @@ export const config = {
     volume: 1,
   },
 
+  /** 書き出し先(npm run render) */
+  output: {
+    file: 'output/philippines_christmas_dance_15s.mp4',
+  },
+
   /** 各シーンの開始フレーム(30fps)。シーンは次のシーンの開始直前まで表示 */
   scenes: {
     quiz: 0, // 0.00秒  クイズ
     answer: 120, // 4.00秒  答え
-    abbr: 225, // 7.50秒  略語の意味
+    explain: 225, // 7.50秒  解説
     recap: 345, // 11.50秒 復習と締め(最後のフレームまで)
   },
 
   texts: {
     series: {title: '踊るフィリピン豆知識', episode: '#01'},
     quiz: {
-      line1: [{text: 'フィリピンで見かける'}] as RichLine,
-      line2: [{text: '『'}, {text: 'CR', highlight: true, bounce: true}, {text: '』って何？'}] as RichLine,
+      line1: [{text: 'フィリピンの'}, {text: 'クリスマス', highlight: true}, {text: 'は'}] as RichLine,
+      line2: [{text: 'いつ', highlight: true, bounce: true}, {text: 'から？'}] as RichLine,
     },
     answer: {
       line1: [{text: '正解は…'}] as RichLine,
-      line2: [{text: 'トイレ！', highlight: true}] as RichLine,
+      line2: [{text: '9月！', highlight: true}] as RichLine,
     },
-    abbr: {
-      line1: [
-        {text: 'C', highlight: true, underline: true},
-        {text: 'omfort '},
-        {text: 'R', highlight: true, underline: true},
-        {text: 'oom'},
-      ] as RichLine,
-      line2: [{text: 'の略です'}] as RichLine,
+    explain: {
+      line1: [{text: 'Septem'}, {text: 'ber', highlight: true, underline: true}] as RichLine,
+      line2: [{text: 'ber', highlight: true}, {text: 'が付く月はクリスマス'}] as RichLine,
     },
     recap: {
-      line1: [{text: 'CR', highlight: true}, {text: ' ＝ '}, {text: 'トイレ', highlight: true}] as RichLine,
+      line1: [{text: '9月', highlight: true}, {text: 'から'}, {text: 'クリスマス', highlight: true}] as RichLine,
       line2: [{text: '知ってた？'}] as RichLine,
     },
   },
 
+  /** 答えの横に出すアイコン: 'parol'(星形ランタン) / 'toilet'(トイレ案内) / 'none'(なし) */
+  answerIcon: 'parol' as 'parol' | 'toilet' | 'none',
+
   /** 文字サイズ(px) */
   fontSize: {
     series: 32, // シリーズ名 30〜36
-    sub: 58, // 補足文 48〜60(「フィリピンで見かける」「正解は…」「の略です」)
-    main: 100, // 質問・英語表記・復習 76〜100
-    answer: 146, // 「トイレ！」130〜150(動画内で最大)
-    recapSub: 76, // 「知ってた？」(復習より少し小さく)
+    sub: 58, // 補足文 48〜60(「フィリピンのクリスマスは」「正解は…」「berが付く月は〜」)
+    main: 100, // 質問・英語表記 76〜100(「いつから？」「September」)
+    answer: 146, // 「9月！」130〜150(動画内で最大)
+    recap: 84, // 復習 76〜100(「9月からクリスマス」が1行に収まる大きさ)
+    recapSub: 66, // 「知ってた？」(復習より少し小さく)
     questionMark: 66, // クイズ横の「？」
   },
 
@@ -91,16 +95,16 @@ export const config = {
     maxLineWidth: 720,
     /** 行間(px) */
     lineGap: 4,
-    /** 下線付きの行(Comfort Room)の下に足す余白(px) */
+    /** 下線付きの行(解説の1行目)の下に足す余白(px) */
     underlineExtraGap: 20,
     /** 行の高さ(文字サイズに対する倍率) */
     lineHeight: 1.14,
     /** シリーズ名の位置(左上の余白) */
     seriesLabel: {left: 80, top: 186},
-    /** トイレ案内ピクトグラムの一辺(px) */
-    pictogramSize: 128,
-    /** 「トイレ！」とピクトグラムの間隔(px) */
-    pictogramGap: 30,
+    /** 答えの横のアイコンの高さ(px) */
+    iconSize: 172,
+    /** 答えの文字とアイコンの間隔(px) */
+    iconGap: 30,
   },
 
   colors: {
@@ -118,7 +122,7 @@ export const config = {
 
   /** アニメーション(フレーム数は 30fps 換算) */
   motion: {
-    crBounceFrames: 7.5, // 「CR」を弾ませる長さ 0.25秒
+    bounceFrames: 7.5, // クイズのキーワードを弾ませる長さ 0.25秒
     answerPop: {from: 0.85, peak: 1.08, frames: 6}, // 85% → 108% → 100% を 0.2秒
     speedLinesFrames: 10.5, // 集中線 0.35秒
     underlineFrames: 7.5, // 下線が伸びる長さ 0.25秒

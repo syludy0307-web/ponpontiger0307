@@ -6,11 +6,11 @@ import {OutlinedLine} from '../components/OutlinedLine';
 import {QuestionMark} from '../components/QuestionMark';
 import {config} from '../config';
 
-/** 0.00〜4.00秒: クイズ「フィリピンで見かける / 『CR』って何？」 */
+/** 0.00〜4.00秒: クイズ。1フレーム目から読める状態で、キーワードだけ最初の0.25秒で軽く弾む */
 export const QuizScene: React.FC = () => {
   const frame = useCurrentFrame();
   const {quiz} = config.texts;
-  const bounce = bounceOffset(frame, config.motion.crBounceFrames, config.fontSize.main);
+  const bounce = bounceOffset(frame, config.motion.bounceFrames, config.fontSize.main);
   return (
     <CaptionBlock>
       <OutlinedLine line={quiz.line1} fontSize={config.fontSize.sub} />

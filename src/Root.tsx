@@ -2,14 +2,14 @@ import {parseMedia} from '@remotion/media-parser';
 import React from 'react';
 import {CalculateMetadataFunction, Composition, staticFile} from 'remotion';
 import {config, FPS, HEIGHT, WIDTH} from './config';
-import {CrDance, CrDanceProps} from './CrDance';
+import {DanceTrivia, DanceTriviaProps} from './DanceTrivia';
 
 /**
  * 素材の長さから尺を決める。
  * - 素材が長い: 指定区間(trimStartSeconds から)の 450 フレーム = 15.00秒
  * - 素材が短い: 素材の終わりで止める(ループ・静止画での水増しはしない)
  */
-const calculateMetadata: CalculateMetadataFunction<CrDanceProps> = async ({props}) => {
+const calculateMetadata: CalculateMetadataFunction<DanceTriviaProps> = async ({props}) => {
   const media = await parseMedia({
     src: staticFile(config.video.src),
     fields: {durationInSeconds: true, slowNumberOfFrames: true, fps: true, dimensions: true},
@@ -28,19 +28,19 @@ const calculateMetadata: CalculateMetadataFunction<CrDanceProps> = async ({props
     );
   }
   const aspect = media.dimensions ? media.dimensions.width / media.dimensions.height : WIDTH / HEIGHT;
-  const fit: CrDanceProps['fit'] = Math.abs(aspect - WIDTH / HEIGHT) < 0.01 ? 'cover' : 'contain-blur';
+  const fit: DanceTriviaProps['fit'] = Math.abs(aspect - WIDTH / HEIGHT) < 0.01 ? 'cover' : 'contain-blur';
   return {durationInFrames: Math.max(1, Math.min(target, available)), props: {...props, fit}};
 };
 
 export const RemotionRoot: React.FC = () => (
   <Composition
-    id="PhilippinesCR"
-    component={CrDance}
+    id="DanceTrivia"
+    component={DanceTrivia}
     width={WIDTH}
     height={HEIGHT}
     fps={FPS}
     durationInFrames={config.video.targetDurationInFrames}
-    defaultProps={{fit: 'cover'} satisfies CrDanceProps}
+    defaultProps={{fit: 'cover'} satisfies DanceTriviaProps}
     calculateMetadata={calculateMetadata}
   />
 );

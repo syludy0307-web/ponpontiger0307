@@ -3,12 +3,12 @@ import {AbsoluteFill, cancelRender, continueRender, delayRender, OffthreadVideo,
 import {SeriesLabel} from './components/SeriesLabel';
 import {config} from './config';
 import {fontsReady} from './fonts';
-import {AbbrScene} from './scenes/AbbrScene';
 import {AnswerScene} from './scenes/AnswerScene';
+import {ExplainScene} from './scenes/ExplainScene';
 import {QuizScene} from './scenes/QuizScene';
 import {RecapScene} from './scenes/RecapScene';
 
-export type CrDanceProps = {
+export type DanceTriviaProps = {
   /** cover: 9:16素材をそのまま全面に / contain-blur: 9:16以外の素材を切らずに収め、背景にぼかしを敷く */
   fit: 'cover' | 'contain-blur';
 };
@@ -28,7 +28,7 @@ const FontGate: React.FC<{children: React.ReactNode}> = ({children}) => {
   return ready ? <>{children}</> : null;
 };
 
-export const CrDance: React.FC<CrDanceProps> = ({fit}) => {
+export const DanceTrivia: React.FC<DanceTriviaProps> = ({fit}) => {
   const {fps} = useVideoConfig();
   const src = staticFile(config.video.src);
   const trimBefore = Math.round(config.video.trimStartSeconds * fps);
@@ -63,11 +63,11 @@ export const CrDance: React.FC<CrDanceProps> = ({fit}) => {
         <Sequence name="クイズ" from={s.quiz} durationInFrames={s.answer - s.quiz} layout="none">
           <QuizScene />
         </Sequence>
-        <Sequence name="答え" from={s.answer} durationInFrames={s.abbr - s.answer} layout="none">
+        <Sequence name="答え" from={s.answer} durationInFrames={s.explain - s.answer} layout="none">
           <AnswerScene />
         </Sequence>
-        <Sequence name="略語の意味" from={s.abbr} durationInFrames={s.recap - s.abbr} layout="none">
-          <AbbrScene />
+        <Sequence name="解説" from={s.explain} durationInFrames={s.recap - s.explain} layout="none">
+          <ExplainScene />
         </Sequence>
         <Sequence name="復習と締め" from={s.recap} layout="none">
           <RecapScene />

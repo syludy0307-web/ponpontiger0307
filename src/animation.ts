@@ -11,7 +11,7 @@ export const popScale = (frame: number, {from, peak, frames}: {from: number; pea
   return interpolate(frame, [half, frames], [peak, 1], {...clamp, easing: Easing.inOut(Easing.quad)});
 };
 
-/** 「CR」を軽く2回弾ませる。frame 0 と終了後は静止位置(= 最初のフレームから読める) */
+/** クイズのキーワードを軽く2回弾ませる。frame 0 と終了後は静止位置(= 最初のフレームから読める) */
 export const bounceOffset = (frame: number, frames: number, fontSize: number) => {
   if (frame <= 0 || frame >= frames) {
     return {y: 0, scale: 1};
