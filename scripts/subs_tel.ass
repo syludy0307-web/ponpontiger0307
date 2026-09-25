@@ -1,0 +1,20 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 768
+PlayResY: 1344
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+YCbCr Matrix: TV.709
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Pink,Noto Sans CJK JP,72,&H00AF5FFF,&H00AF5FFF,&H00201A1A,&H90000000,-1,0,0,0,100,100,0,0,1,6,4,2,30,30,110,1
+Style: GoldJP,Noto Sans CJK JP,72,&H004AC2FF,&H004AC2FF,&H00201A1A,&H90000000,-1,0,0,0,100,100,0,0,1,6,4,2,30,30,110,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:01.20,0:00:04.50,Pink,,0,0,0,,{\fad(150,150)}昨日なんで電話出なかったの
+Dialogue: 0,0:00:05.56,0:00:07.70,GoldJP,,0,0,0,,{\fad(150,150)}仕事だからだよ
+Dialogue: 0,0:00:07.76,0:00:09.95,Pink,,0,0,0,,{\fad(150,150)}どうせパロパロでしょ
+Dialogue: 0,0:00:10.96,0:00:12.10,GoldJP,,0,0,0,,{\fad(150,150)}いやいや
+Dialogue: 0,0:00:12.80,0:00:14.90,Pink,,0,0,0,,{\fad(150,150)}だって電話出なかったし

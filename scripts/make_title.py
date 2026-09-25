@@ -1,18 +1,20 @@
 """タイトル画像を作る。
 
-  python3 make_title.py [文字列] [出力.png]
+  python3 make_title.py [文字列] [出力.png] [動画の横幅]
 
 白文字＋濃いフチ＋ドロップシャドウの PNG を書き出し、
 横幅が動画からはみ出す場合は自動で縮小する。
 サイズは <出力>_dims.json にも保存する。
+動画の横幅（既定 720）に合わせて文字サイズと余白を比例させる。
 """
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import json, os, sys
 
 TEXT = sys.argv[1] if len(sys.argv) > 1 else "おなら以外"
 OUTPUT = sys.argv[2] if len(sys.argv) > 2 else "title.png"
+VIDEO_W = int(sys.argv[3]) if len(sys.argv) > 3 else 720
 TTC = "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"
-VIDEO_W = 720
+SCALE = VIDEO_W / 720.0   # 720px基準からの倍率
 
 # --- .ttc の中から日本語フェイスを探す ---
 jp_index = 0
@@ -26,13 +28,13 @@ for i in range(12):
     except Exception:
         break
 
-FONT_SIZE = 104
+FONT_SIZE = round(104 * SCALE)
 font = ImageFont.truetype(TTC, FONT_SIZE, index=jp_index)
 
-STROKE = 9          # フチの太さ
-SHADOW_BLUR = 12
-SHADOW_OFF = (0, 7)
-PAD = STROKE + SHADOW_BLUR * 2 + 24   # フチとぼかしの余白
+STROKE = round(9 * SCALE)              # フチの太さ
+SHADOW_BLUR = round(12 * SCALE)
+SHADOW_OFF = (0, round(7 * SCALE))
+PAD = STROKE + SHADOW_BLUR * 2 + round(24 * SCALE)   # フチとぼかしの余白
 
 tmp = Image.new("RGBA", (10, 10))
 bbox = ImageDraw.Draw(tmp).textbbox((0, 0), TEXT, font=font, stroke_width=STROKE)
@@ -59,8 +61,8 @@ ImageDraw.Draw(tx).text(
 )
 card = Image.alpha_composite(card, tx)
 
-# 横幅がはみ出すなら縮小（左右40pxずつ空ける）
-max_w = VIDEO_W - 80
+# 横幅がはみ出すなら縮小（左右に動画幅の約5.5%ずつ空ける）
+max_w = VIDEO_W - round(80 * SCALE)
 if W > max_w:
     r = max_w / W
     W, H = int(W * r), int(H * r)
