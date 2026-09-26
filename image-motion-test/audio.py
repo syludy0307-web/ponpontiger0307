@@ -213,6 +213,28 @@ def build():
     return buf.astype(np.float32)
 
 
+def build_trio(dur=8.0):
+    """calm 8 s cue: pad + sparse plucks, a soft chime when Moka slow-blinks, fade out"""
+    n = int(SR * dur)
+    buf = np.zeros((2, N))
+    add(buf, pad_chord([53, 60, 64, 67, 69], dur + 0.4), 0.0, 0.0, 0.95)
+    add(buf, pad_chord([41, 48], dur + 0.4), 0.0, 0.0, 0.35)
+    mel = [(0.5, 72, -0.3), (1.2, 76, 0.2), (1.9, 79, -0.1), (2.9, 77, 0.3), (3.6, 76, -0.2), (4.4, 72, 0.1),
+           (5.55, 84, 0.0), (5.9, 81, 0.2), (6.6, 79, -0.2), (7.2, 77, 0.1)]
+    for t0, m, p in mel:
+        add(buf, pluck(midi(m), 1.8, 0.5), t0, p, 0.34)
+        add(buf, pluck(midi(m), 1.8, 0.5), t0 + 0.33, -p, 0.09)
+    add(buf, pluck(midi(96), 2.2, 0.3), 5.55, 0.25, 0.12)  # chime
+    buf = buf[:, :n]
+    fade = np.ones(n)
+    i0 = int((dur - 0.7) * SR)
+    fade[i0:] = np.linspace(1, 0, n - i0) ** 1.5
+    fade[:int(0.25 * SR)] = np.linspace(0, 1, int(0.25 * SR))
+    buf = np.tanh(buf * fade * 1.1) / 1.1
+    buf /= max(1e-6, np.abs(buf).max()) / 0.8
+    return buf.astype(np.float32)
+
+
 def write_wav(path, buf):
     data = np.clip(buf.T, -1, 1).astype('<f4').tobytes()
     with open(path, 'wb') as f:
@@ -223,6 +245,7 @@ def write_wav(path, buf):
 
 if __name__ == "__main__":
     import sys
-    b = build()
-    write_wav(sys.argv[1] if len(sys.argv) > 1 else "out/audio.wav", b)
+    b = build_trio() if "--trio" in sys.argv else build()
+    args = [x for x in sys.argv[1:] if not x.startswith("--")]
+    write_wav(args[0] if args else "out/audio.wav", b)
     print("ok", b.shape, float(np.abs(b).max()))

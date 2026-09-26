@@ -39,3 +39,15 @@ python interp_compare.py          # 自動中割りの比較画像
 ```
 
 クレジットは `CREDITS.md`。
+
+## 自分の画像で動かす（グリーンバックの1枚から）
+
+```bash
+mkdir -p input && cp <あなたの画像>.png input/trio.png
+python trio_render.py input/trio.png     # → out/private/trio_test.mp4（8秒）と確認用の静止画
+```
+
+- グリーンバックは色差キーで抜く（髪の毛の半透明も残す）→ 縁の色の置き換え → 緑かぶりの除去
+- まばたきは「目を閉じた画像」がなくても、まぶたの皮膚・毛を目の上に下ろす変形で作る（`blink.py`）
+- 部位ごとの動き（髪のゆれ、首、イヤリング、耳、鼻、子猫の首かしげ・ゆっくりまばたき）の位置は `trio_shot.py` に座標で書いてある。別の画像では座標を合わせ直す
+- `input/` と `out/private/` は git 管理外（公開リポジトリにキャラ画像や動画が上がらないように）

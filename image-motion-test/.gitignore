@@ -2,3 +2,5 @@ work/
 fonts/
 out/_*
 __pycache__/
+input/
+out/private/
