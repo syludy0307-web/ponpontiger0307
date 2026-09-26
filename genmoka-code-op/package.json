@@ -1,0 +1,16 @@
+{
+  "name": "genmoka-code-op",
+  "version": "1.0.0",
+  "description": "ゲンとモカ 10秒オープニング — 絵も音もすべてコードで生成",
+  "scripts": {
+    "fonts": "python build_fonts.py",
+    "review": "node export.mjs --review",
+    "check": "node export.mjs --check",
+    "export": "node export.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.56.1"
+  },
+  "private": true,
+  "type": "module"
+}

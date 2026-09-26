@@ -1,0 +1,5 @@
+node_modules/
+fonts_src/
+out/frames/
+out/audio.wav
+out/_*
