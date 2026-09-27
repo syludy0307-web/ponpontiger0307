@@ -1,4 +1,4 @@
-// プレビュー画像(4枚)を書き出す: node scripts/stills.mjs
+// プレビュー画像(4枚、エンドカード付きなら5枚)を書き出す: node scripts/stills.mjs
 // 追加でフレーム番号を渡すと、確認用に output/previews/extra/ へ書き出す: node scripts/stills.mjs 120 126
 import {bundle} from '@remotion/bundler';
 import {openBrowser, renderStill, selectComposition} from '@remotion/renderer';
@@ -20,9 +20,14 @@ const serveUrl = await bundle({entryPoint: path.resolve('src/index.ts')});
 const browser = await openBrowser('chrome', {browserExecutable});
 const composition = await selectComposition({serveUrl, id: 'DanceTrivia', puppeteerInstance: browser});
 
+// エンドカード付き(16秒より長い)なら、エンドカードの確認用に5枚目を足す
+const previews = composition.durationInFrames > 16 * composition.fps
+  ? [...PREVIEWS, {sec: 17.5, file: 'preview_05_endcard_17.5s.png'}]
+  : PREVIEWS;
+
 const jobs = extraFrames.length
   ? extraFrames.map((frame) => ({frame, file: path.join('extra', `frame_${String(frame).padStart(3, '0')}.png`)}))
-  : PREVIEWS.map((p) => ({frame: Math.round(p.sec * composition.fps), file: p.file}));
+  : previews.map((p) => ({frame: Math.round(p.sec * composition.fps), file: p.file}));
 
 for (const job of jobs) {
   const output = path.join(outDir, job.file);

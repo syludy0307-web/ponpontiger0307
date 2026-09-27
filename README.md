@@ -1,19 +1,20 @@
-# 踊るフィリピン豆知識 #01「フィリピンのクリスマスはいつから？」
+# 踊るフィリピン豆知識 #02「フィリピンのクリスマスはいつ終わる？」
 
 ダンス動画にクイズ形式のテロップを重ねる、TikTok 向け縦型ショートの編集プロジェクトです(Remotion + React)。
-伝える内容は1つだけ:「フィリピンのクリスマスシーズンは **9月** から。“**ber**” が付く月(September〜December)がクリスマスシーズン」。
+#02 で伝える内容は1つだけ:「フィリピンのクリスマスは **1月** の **三賢者の日**(1月の第1日曜日)で正式に終わる」。
+最後の5秒は、ダンスを流したまま「所属 JTV PlayBoyClub エリー」のエンドカードを重ねています。
 
 ## 完成品の仕様
 
 | 項目 | 値 |
 | --- | --- |
-| ファイル | `output/philippines_christmas_dance_15s.mp4`(`src/config.ts` の `output.file`) |
+| ファイル | `output/philippines_christmas_end_dance_20s.mp4`(`src/config.ts` の `output.file`) |
 | 画面 | 1080×1920(9:16)/ 30fps |
 | 映像 | H.264(High)/ yuv420p / CRF 18 / faststart |
 | 音声 | 元動画の音声をそのまま AAC 192kbps(BGM・効果音・ナレーションの追加なし) |
-| 尺 | 目標 15.00秒 = 450フレーム。**今回の素材は 14.09秒しかないため 14.07秒(422フレーム)** |
+| 尺 | 20.00秒 = 600フレーム(豆知識 15.00秒 + エンドカード 5.00秒) |
 
-尺は素材の長さから自動で決まります。素材が15秒以上なら `trimStartSeconds` から 450 フレーム(15.00秒)、
+尺は素材の長さから自動で決まります。素材が足りる場合は `trimStartSeconds` から「450 フレーム + エンドカード」、
 短い場合はループや静止画で水増しせず、素材の終わりで止めます(書き出し時に `[尺不足]` と表示)。
 
 ## 必要なもの
@@ -26,24 +27,26 @@
 
 ```bash
 npm install
-# ダンス動画を public/input/dance.mp4 に置く(元ファイルは上書きされません)
+# ダンス動画を public/input/ に置き、src/config.ts の video.src をそのファイル名にする
+# (#02 は public/input/ep02.mp4。元ファイルは上書きされません)
 
 npm run studio   # ブラウザでプレビュー・微調整(Remotion Studio)
-npm run stills   # 確認用プレビュー画像4枚 → output/previews/
-npm run render   # 完成動画 → output/philippines_christmas_dance_15s.mp4
+npm run stills   # 確認用プレビュー画像 → output/previews/
+npm run render   # 完成動画 → output/philippines_christmas_end_dance_20s.mp4
 ```
 
 > **書き出しは必ず `npm run render` を使ってください。**
 > `npx remotion render` を単体で使うと、Remotion 内部の AAC 変換の仕様で音声が約43ms遅れます(下の「制作メモ」参照)。
 
-プレビュー画像(`npm run stills`)は次の4時点です。
+プレビュー画像(`npm run stills`)は次の時点です。
 
 | ファイル | 時点 | 確認すること |
 | --- | --- | --- |
 | `preview_01_quiz_1.0s.png` | 1.0秒 | 質問の読みやすさ |
-| `preview_02_answer_4.4s.png` | 4.4秒 | 答えとパロルのアイコン(集中線は 4.00〜4.35秒で消えた後) |
-| `preview_03_explain_9.0s.png` | 9.0秒 | September の綴りと配色 |
+| `preview_02_answer_4.4s.png` | 4.4秒 | 答えとカレンダーのアイコン(集中線は 4.00〜4.35秒で消えた後) |
+| `preview_03_explain_9.0s.png` | 9.0秒 | 解説の文字と配色 |
 | `preview_04_recap_13.0s.png` | 13.0秒 | 復習テロップの配置 |
+| `preview_05_endcard_17.5s.png` | 17.5秒 | エンドカード(エンドカードがある時だけ) |
 
 任意のフレームも書き出せます: `node scripts/stills.mjs 124` → `output/previews/extra/frame_124.png`(124 = 4.13秒、集中線が出ている瞬間)
 
@@ -57,27 +60,29 @@ npm run render   # 完成動画 → output/philippines_christmas_dance_15s.mp4
 | 使用区間の開始位置 | `video.trimStartSeconds`(秒) |
 | 書き出し先のファイル名 | `output.file` |
 | テロップ文言・強調色を付ける部分 | `texts`(部分ごとに `highlight` / `bounce` / `underline` を指定) |
-| 答えの横のアイコン | `answerIcon`(`'parol'` 星形ランタン / `'toilet'` トイレ案内 / `'none'`) |
+| 答えの横のアイコン | `answerIcon`(`'calendar'` / `'parol'` 星形ランタン / `'toilet'` トイレ案内 / `'none'`) |
+| エンドカード | `endCard`(`enabled` で付け外し、`seconds` 長さ、`label` / `club` / `name` 文言、`top` 位置) |
 | シーンの切り替えフレーム | `scenes`(30fps。4秒 = 120) |
 | 文字サイズ | `fontSize` |
 | テロップ位置・シリーズ名の位置 | `layout`(`captionTop`, `centerX`, `seriesLabel`, `iconSize` など) |
-| 強調色・縁取り色 | `colors`(強調色は `highlight`) |
+| 色 | `colors`(強調色は `highlight`、エンドカードの金色は `goldLight` / `gold` / `goldDeep`) |
 | 動きの長さ | `motion`(キーワードの弾み、答えのポップ、集中線、下線) |
 
 1行が `layout.maxLineWidth`(720px)を超える文言にすると、はみ出さないよう自動で縮小します。
 フォントは常用の日本語(CP932 範囲 7,631 字)を収録しているので、次回以降の文言でも文字化けしません。
 
-## タイムライン(30fps)
+## タイムライン(#02、30fps)
 
 | 時間 | フレーム | テロップ | 演出 |
 | --- | --- | --- | --- |
-| 0.00〜4.00秒 | 0〜119 | フィリピンの**クリスマス**は / **いつ**から？ | 1フレーム目から表示。「いつ」だけ最初の0.25秒で弾む。小さな「？」2つが揺れて静止 |
-| 4.00〜7.50秒 | 120〜224 | 正解は… / **9月！** | 「9月！」を 85%→108%→100%(0.2秒)。背後に集中線 0.35秒。横にパロル(星形ランタン) |
-| 7.50〜11.50秒 | 225〜344 | Septem**ber** / **ber**が付く月はクリスマス | 「ber」だけ黄色。下に黄色い下線を 0.25秒で左→右 |
-| 11.50秒〜最後 | 345〜421 | **9月**から**クリスマス** / 知ってた？ | 登場時だけ軽くポップ、その後は最後まで静止(今回は素材の都合で 2.57秒) |
+| 0.00〜4.00秒 | 0〜119 | フィリピンの**クリスマス**は / **いつ**終わる？ | 1フレーム目から表示。「いつ」だけ最初の0.25秒で弾む。小さな「？」2つが揺れて静止 |
+| 4.00〜7.50秒 | 120〜224 | 正解は… / **1月！** | 「1月！」を 85%→108%→100%(0.2秒)。背後に集中線 0.35秒。横に1月のカレンダー(第1日曜日のマスが黄色) |
+| 7.50〜11.50秒 | 225〜344 | **三賢者の日**まで / ＝1月の第1日曜日 | 「三賢者の日」だけ黄色。下に黄色い下線を 0.25秒で左→右 |
+| 11.50〜15.00秒 | 345〜449 | **1月**まで**クリスマス** / 知ってた？ | 登場時だけ軽くポップ、その後は静止 |
+| 15.00〜20.00秒 | 450〜599 | 所属 / JTV PlayBoyClub / エリー | エンドカード: 上部を暗めのグラデーションにし、光が走る → 金の線 → 店名が左から現れる → 名前がぼかしから浮かぶ → きらめき。最後まで表示(黒画面なし) |
 
 太字は黄色(強調色)。ダンス映像は全編で1本を連続再生しています(シーンごとの再スタート・速度変更・反転・フリーズなし)。
-左上にシリーズ名「踊るフィリピン豆知識 #01」を小さく固定表示しています。
+シリーズ名「踊るフィリピン豆知識 #02」は左下に小さく固定表示しています。
 
 ## ファイル構成
 
@@ -85,40 +90,51 @@ npm run render   # 完成動画 → output/philippines_christmas_dance_15s.mp4
 src/
   config.ts              … 編集用の設定(ここだけ触れば OK)
   Root.tsx               … コンポジション登録。素材の長さから尺を自動計算
-  DanceTrivia.tsx        … 本体(最下層にダンス動画 → 上にテロップ類)
+  DanceTrivia.tsx        … 本体(最下層にダンス動画 → 上にテロップ類 → 最後にエンドカード)
   scenes/                … 4シーン(Quiz / Answer / Explain / Recap)
-  components/            … 縁取り文字、集中線、パロル・トイレのアイコン、「？」、シリーズ名
+  components/            … 縁取り文字、集中線、アイコン(カレンダー・パロル・トイレ)、「？」、シリーズ名、エンドカード
   animation.ts, fonts.ts
 scripts/
   render.mjs             … 完成動画の書き出し(映像 → 元音声の合成 → faststart 確認)
   stills.mjs             … プレビュー画像の書き出し
-  build_fonts.py         … 同梱フォント(サブセット)の作り方
+  build_fonts.py         … 同梱フォント(日本語サブセット)の作り方
 public/
-  fonts/                 … Noto Sans CJK JP Black / Bold(サブセット, SIL OFL 1.1)
+  fonts/                 … Noto Sans CJK JP Black / Bold(サブセット)、Playfair Display Bold(いずれも SIL OFL 1.1)
   input/                 … 素材置き場(動画は .gitignore 済み)
 output/
   caption.txt            … 投稿文
   *.mp4, previews/       … 書き出し結果(.gitignore 済み)
 ```
 
+## エピソードの履歴
+
+各回の文言・レイアウトは git のコミットに残っています。昔の回を作り直すときは、そのコミットの `src/config.ts` を使ってください。
+
+| 回 | テーマ | 素材 | コミット |
+| --- | --- | --- | --- |
+| #01 | フィリピンのクリスマスはいつから？ → 9月！ | `public/input/dance.mp4` | `d673afb` |
+| #02 | フィリピンのクリスマスはいつ終わる？ → 1月！(+ エンドカード) | `public/input/ep02.mp4` | このコミット |
+| (未使用) | CR って何？ → トイレ！ | 別の場所で撮った動画なら流用可 | `a897def` |
+
 ## 制作メモ
 
-- **ネタの出典**: SBS Food「A very Filipino Christmas: Early starts, pigs and plenty of flan」
-  (“ber” months = September〜December に入るとクリスマスが始まる、と明記)
-  https://www.sbs.com.au/food/article/a-very-filipino-christmas-early-starts-pigs-and-plenty-of-flan/k9c0mr98a
-- **ネタの差し替え**: 最初は「CRって何？(Comfort Room = トイレ)」で制作しましたが、素材がトイレで踊る映像のため、
-  人物をいじっているように見えかねないと判断してこのネタに変更しました。CR 版の文言はコミット `a897def` に残っていて、
-  `answerIcon: 'toilet'` でトイレのピクトグラムも使えます(別の場所で撮った動画なら流用可)。
-- **テロップの位置**: 素材の全フレームで顔と手の位置を検出し(MediaPipe)、完成画面上で
-  顔は y≈504〜1137、手は y≈769 より下にしか来ないことを確認。テロップは頭上の帯(y≈186〜501)に置き、
-  書き出し後に全422フレームで「顔・手・TikTok の透かしとテロップが重ならない」ことを確認しました。
-  冒頭0〜0.4秒だけ人物が前かがみになり、質問の2行目が髪の上端に重なります(顔には重なりません)。
+- **ネタの出典(#02)**: Philippine News Agency「Prelate urges Catholics to celebrate 'Epiphany'」
+  (「三賢者の日」は毎年1月の第1日曜日で、フィリピンのクリスマスの正式な終わり、と明記)
+  https://www.pna.gov.ph/articles/1020895
+- **テロップの位置**: 素材の全フレームで顔と手の位置を検出し(MediaPipe)、テロップを頭上の帯に置いています。
+  #02 は #01 より頭の位置が高く(額が最も上で y≈393、1.1〜2.6秒)、テロップを y≈188 から始め、
+  シリーズ名を左下(下端360pxの内側)に移しました。書き出し後、全600フレームでテロップ・エンドカードの文字が
+  顔と重ならないこと(最も近い瞬間で約30px離れている)、頭上の帯では手とも重ならないことを確認しました。
+  頭が一番高い瞬間は、質問の2行目が髪の上端にかかります(顔にはかかりません)。
+- **エンドカード**: 最後の5秒は顔が y≈450 より下にあり、手は y≈602 より上に来ないため、頭上の帯に置いています
+  (下の方だと約半分のフレームで手と重なるため)。
 - **配置ガイド**: テロップは上端180px・下端360px・右端180pxの内側、左端80px以上に収まっています
   (本作品の目安であり、プラットフォーム公式のセーフゾーンではありません)。
 - **拍合わせ**: 4秒付近(3.8〜4.2秒)に明確な音のアクセントが無かったため、答えは指定どおり 4.00秒に出しています。
 - **音声**: Remotion は内部で AAC を ADTS 形式で作るため、先頭のプライミング情報が失われ、
   元動画より 2048 サンプル(約43ms)遅れます。`npm run render` は映像を音声なしで書き出した後、
   元動画の音声を同じ区間で AAC 化して合わせるので、ズレは 0 です(相互相関で確認)。
-- **フォント**: Noto Sans CJK JP(Noto Sans JP 相当)の Black / Bold を同梱。ライセンスは `public/fonts/OFL.txt`。
+- **フォント**: Noto Sans CJK JP(Noto Sans JP 相当)の Black / Bold を同梱(`public/fonts/OFL.txt`)。
+  エンドカードの店名は Playfair Display Bold(`public/fonts/OFL-PlayfairDisplay.txt`)。
 - **Remotion のライセンス**: 個人・従業員3人以下の会社・非営利団体は無料(商用可)。
   それ以上の規模の会社は有料ライセンスが必要です(`node_modules/remotion/LICENSE.md`)。

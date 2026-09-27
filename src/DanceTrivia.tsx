@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {AbsoluteFill, cancelRender, continueRender, delayRender, OffthreadVideo, Sequence, staticFile, useVideoConfig} from 'remotion';
+import {EndCard} from './components/EndCard';
 import {SeriesLabel} from './components/SeriesLabel';
 import {config} from './config';
 import {fontsReady} from './fonts';
@@ -29,7 +30,10 @@ const FontGate: React.FC<{children: React.ReactNode}> = ({children}) => {
 };
 
 export const DanceTrivia: React.FC<DanceTriviaProps> = ({fit}) => {
-  const {fps} = useVideoConfig();
+  const {fps, durationInFrames} = useVideoConfig();
+  // エンドカードは最後の数秒(ダンスはその下で流れ続ける)
+  const endFrames = config.endCard.enabled ? Math.round(config.endCard.seconds * fps) : 0;
+  const endStart = durationInFrames - endFrames;
   const src = staticFile(config.video.src);
   const trimBefore = Math.round(config.video.trimStartSeconds * fps);
   const s = config.scenes;
@@ -69,9 +73,14 @@ export const DanceTrivia: React.FC<DanceTriviaProps> = ({fit}) => {
         <Sequence name="解説" from={s.explain} durationInFrames={s.recap - s.explain} layout="none">
           <ExplainScene />
         </Sequence>
-        <Sequence name="復習と締め" from={s.recap} layout="none">
+        <Sequence name="復習と締め" from={s.recap} durationInFrames={Math.max(1, endStart - s.recap)} layout="none">
           <RecapScene />
         </Sequence>
+        {endFrames > 0 ? (
+          <Sequence name="エンドカード" from={endStart} layout="none">
+            <EndCard />
+          </Sequence>
+        ) : null}
       </FontGate>
     </AbsoluteFill>
   );
