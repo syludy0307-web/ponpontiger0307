@@ -168,23 +168,56 @@ def mark_hallucination(seg: dict, total: float, lang_prob=None) -> dict:
     return seg
 
 
-def onset(x: np.ndarray, a: float, b: float, thr: float):
-    """a〜b 秒の中で、音が thr dB を超えて 0.1 秒以上続き始める時刻（50ms 刻み）。
-
-    区間を切り出して聞き直すと、先頭の語の時刻が区間の開始に張り付くことがある。
-    そのときはこの「音の立ち上がり」を開始時刻の目安にする。
-    """
+def frame_db(x: np.ndarray, a: float, b: float):
+    """a〜b 秒を 50ms ごとに区切った (時刻, dB) の並び。"""
     step = int(SR * 0.05)
-    loud_run = 0
+    out = []
     for i in range(max(0, int(a * SR)), min(len(x), int(b * SR)), step):
         seg = x[i:i + step].astype(np.float64)
         rms = math.sqrt(float(np.mean(seg * seg))) if len(seg) else 0.0
-        if rms > 0 and 20 * math.log10(rms / 32768) > thr:
-            loud_run += 1
-            if loud_run >= 2:
-                return round(i / SR - 0.05, 2)
+        out.append((i / SR, 20 * math.log10(rms / 32768) if rms > 0 else -99.0))
+    return out
+
+
+def voice_threshold(x: np.ndarray, thr: float) -> float:
+    """「声」とみなす音量。その動画の声の大きさ（上位5%）から 18dB 下。
+
+    息を吸う音やため息のような小さな音を、声の出だしと取り違えないため
+    （静かな素材では、息の音でも普通のしきい値を超えてしまった）。
+    """
+    dbs = [d for _t, d in frame_db(x, 0, len(x) / SR)]
+    return max(thr, float(np.percentile(dbs, 95)) - 18.0) if dbs else thr
+
+
+def onset(x: np.ndarray, a: float, b: float, thr: float):
+    """a〜b 秒の中で、声（thr dB 超え）が 0.1 秒以上続き始める時刻。無ければ None。
+
+    区間を切り出して聞き直すと、先頭の語の時刻が区間の開始に張り付くことがある。
+    そのときはこの「音の立ち上がり」を開始時刻の目安にする。thr には voice_threshold を渡す。
+    """
+    run = 0
+    for t, db in frame_db(x, a, b):
+        if db > thr:
+            run += 1
+            if run >= 2:
+                return round(t - 0.05, 2)
         else:
-            loud_run = 0
+            run = 0
+    return None
+
+
+def onset_after_silence(x: np.ndarray, a: float, b: float, quiet: float, voice: float):
+    """a〜b 秒で、0.25秒以上の無音（quiet dB 未満）をはさんだ後の声の出だし。無ければ None。
+
+    Whisper は、前の行の終わりと次の行の始まりを同じ時刻にくっつけることがある。
+    そのとき実際の声は、境目の後の無音が明けてから始まる。
+    """
+    frames = frame_db(x, a, b)
+    silent = 0
+    for k, (t, db) in enumerate(frames):
+        silent = silent + 1 if db < quiet else 0
+        if silent >= 5:
+            return onset(x, t, b, voice)
     return None
 
 
@@ -313,7 +346,8 @@ def cmd_scan(a) -> None:
 
     prof = energy(x)
     loud, thr, floor = loud_regions(prof)
-    print(f"\n===== 音量（0.5秒ごと） しきい値 {thr:.1f}dB / 床 {floor:.1f}dB =====")
+    vthr = voice_threshold(x, thr)          # 声の出だしの判定用（息の音を拾わない）
+    print(f"\n===== 音量（0.5秒ごと） しきい値 {thr:.1f}dB / 床 {floor:.1f}dB / 声 {vthr:.1f}dB =====")
     edges = [b for _, b in bounds[:-1]]
     for t0, db in prof:
         mark = "  <-- 境目" if any(t0 <= e < t0 + 0.5 for e in edges) else ""
@@ -359,7 +393,7 @@ def cmd_scan(a) -> None:
             E.append({"a_index": idx, "gap": [g0, g1], "text": seg["text"],
                       "before": {"range": before, "segments": decode_window(model, x, *before, "ja")[0]},
                       "after": {"range": after, "segments": after_segs,
-                                "onset": start_hint(x, after_segs, after[0], thr)}})
+                                "onset": start_hint(x, after_segs, after[0], vthr)}})
 
     # ---------------------------------------------------------------- レポート
     def show(title, segs, words=False):
@@ -375,7 +409,7 @@ def cmd_scan(a) -> None:
                 for g0, g1, _k in internal_gaps(s):
                     print(f"      ⚠ 語の間が {g1 - g0:.1f} 秒空いている（{g0:.2f}→{g1:.2f}）→ E を参照")
                 for w in long_words(s):
-                    o = word_onset(x, w, thr)
+                    o = word_onset(x, w, vthr)
                     if o:
                         pause = o - w["s"]
                         print(f"      ⚠「{w['w']}」が {w['e'] - w['s']:.1f} 秒と長い → 前に約 {pause:.1f} 秒の間。"
@@ -431,9 +465,14 @@ def cmd_scan(a) -> None:
             fix = next((e["after"]["onset"] for e in E if e["text"] == s["text"] and e["after"].get("onset")), None)
             notes.append("語間に空白→Eを確認" + (f"（開始の目安 {fix:.2f} 秒）" if fix else ""))
         for w in long_words(s):
-            o = word_onset(x, w, thr)
+            o = word_onset(x, w, vthr)
             if o and o - w["s"] >= 1.0:
                 notes.append(f"「{w['w']}」の前に約{o - w['s']:.1f}秒の間 → ここで行を分け、後ろは {o:.2f} 秒開始")
+        prev = base[i - 2] if i >= 2 else None
+        if prev and s["start"] - prev["end"] < 0.15 and not internal_gaps(s):
+            o = onset_after_silence(x, s["start"], min(total, s["start"] + 1.6), thr, vthr)
+            if o and o > s["start"] + 0.3:
+                notes.append(f"前の行とくっついている → 無音のあと {o:.2f} 秒から声。開始はこちらにする")
         # ※ ふつうの行の開始時刻は Whisper のままでよい（0.3秒ほど早めに出がちだが、字幕が少し早く出るぶんには
         #    問題にならなかった）。音量から推定し直すと、ため息など小さな声で始まる行で遅れる方向に外れる。
         if s["halluc"]["level"]:
@@ -485,6 +524,7 @@ def cmd_window(a) -> None:
     total = len(x) / SR
     lang = None if a.lang == "auto" else a.lang
     _loud, thr, _floor = loud_regions(energy(x))
+    thr = voice_threshold(x, thr)           # 声の出だしの判定用（息の音を拾わない）
     for name in [m.strip() for m in a.models.split(",") if m.strip()]:
         model = load_model(name, a.device)
         for st, en in pairs:
