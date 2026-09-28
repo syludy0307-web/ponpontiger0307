@@ -1,0 +1,26 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 720
+PlayResY: 1280
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+YCbCr Matrix: TV.709
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Pink,Noto Sans CJK JP,68,&H00AF5FFF,&H00AF5FFF,&H00201A1A,&H90000000,-1,0,0,0,100,100,0,0,1,6,4,2,28,28,105,1
+Style: GoldJP,Noto Sans CJK JP,68,&H004AC2FF,&H004AC2FF,&H00201A1A,&H90000000,-1,0,0,0,100,100,0,0,1,6,4,2,28,28,105,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.75,0:00:03.55,Pink,,0,0,0,,{\fad(150,150)}はぁ、まだお姉ちゃん来ない
+Dialogue: 0,0:00:03.94,0:00:05.90,GoldJP,,0,0,0,,{\fad(150,150)}お姉さん、一人？
+Dialogue: 0,0:00:06.66,0:00:07.60,Pink,,0,0,0,,{\fad(150,150)}え？
+Dialogue: 0,0:00:09.23,0:00:12.10,GoldJP,,0,0,0,,{\fad(150,150)}いい話があるんだけど、\N興味ない？
+Dialogue: 0,0:00:15.34,0:00:16.95,Pink,,0,0,0,,{\fad(150,150)}なんで私に？
+Dialogue: 0,0:00:17.55,0:00:20.25,GoldJP,,0,0,0,,{\fad(150,150)}お姉さん綺麗だから\Nきっと稼げるよ
+Dialogue: 0,0:00:21.75,0:00:24.30,Pink,,0,0,0,,{\fad(150,150)}そんなことないですけど
+Dialogue: 0,0:00:24.92,0:00:26.65,Pink,,0,0,0,,{\fad(150,150)}詳しく聞かせてください
+Dialogue: 0,0:00:27.48,0:00:29.80,GoldJP,,0,0,0,,{\fad(150,150)}（こいつ、ちょろいな）
+Dialogue: 0,0:00:30.60,0:00:33.60,GoldJP,,0,0,0,,{\fad(150,150)}とりあえず落ち着いて\N話せるところへ行こう
+Dialogue: 0,0:00:34.48,0:00:35.40,Pink,,0,0,0,,{\fad(150,150)}はい
