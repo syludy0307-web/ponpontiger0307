@@ -1,63 +1,54 @@
 # ponpontiger0307
 
-2本の縦動画を連結し、冒頭にタイトルを重ねて文字起こしまで行った成果物です。
+縦型ショート動画を連結し、タイトル・文字起こし・字幕を入れて仕上げた成果物と、
+その手順を別のチャットの Claude でも再現できるようにしたスキルです。
 
 ## 成果物 (`output/`)
 
-| ファイル | 内容 |
-| --- | --- |
-| `onara-igai_final.mp4` | 連結＋タイトル＋ピンク字幕入りの完成動画（720x1280 / 24fps / 30.08秒 / H.264+AAC） |
-| `transcript.txt` | 文字起こし（タイムコード・補足つき） |
-| `transcript.srt` | 字幕ファイル（SRT） |
+| タイトル | 動画 | 文字起こし |
+| --- | --- | --- |
+| おなら以外 | `onara-igai_final.mp4` | `transcript.txt` / `.srt` |
+| 信長 | `nobunaga_subtitled.mp4` | `transcript_nobunaga.txt` / `.srt` |
+| アウェイ | `away_final.mp4` | `transcript_away.txt` / `.srt` |
+| ハザード | `hazard_final.mp4` | `transcript_hazard.txt` / `.srt` |
+| 濡れ衣 | `nureginu_final.mp4` | `transcript_nureginu.txt` / `.srt` |
+| 電話にでないと… | `denwa_final.mp4` | `transcript_denwa.txt` / `.srt` |
+| 悪だくみ | `warudakumi_final.mp4` | `transcript_warudakumi.txt` / `.srt` |
 
-## 内容
+文字起こしの txt には、時刻・話者・判断したこと（除外した幻聴、話者の決め手など）の補足が付いています。
 
-**連結** — 2本とも 720x1280 / 24fps / H.264 / PCM 16bit 32kHz と規格が揃っていたため、
-concat demuxer によるストリームコピーで無劣化に連結しました（15.04秒 × 2 = 30.08秒）。
+## ハウススタイル
 
-**タイトル** — 画面上部に「おなら以外」を冒頭5秒だけ表示。エフェクトは次の通りです。
+- **連結**: ファイル名の番号順（001→002→003）
+- **タイトル**: 画面上部・冒頭5秒。白文字＋濃いフチ＋影（Noto Sans CJK JP Bold）。
+  上からスライドインして少し行き過ぎて戻る → 静止 → 最後の0.5秒で上に抜けながらフェードアウト
+- **字幕**: 画面下部・太字・濃いフチと影・0.15秒フェード。女性＝ピンク `#FF5FAF`、男性＝金 `#FFC24A`。
+  心の声は（ ）で囲む
+- **画質**: 解像度は素材のまま、H.264（CRF18）＋AAC 192kbps、エンコードは1回
 
-- `0.00–0.55s` 画面上から**スライドイン**（少し行き過ぎて戻るバウンド / ease-out-back）
-- `0.00–0.35s` フェードイン
-- `0.55–4.50s` 静止
-- `4.50–5.00s` 上へドリフトしながらフェードアウト
-- `5.00s` 完全に消灯（以降は素材そのまま）
+## スキル (`.claude/skills/video-concat-subtitle/`)
 
-書体は Noto Sans CJK JP Bold。白文字に濃いフチとドロップシャドウを付け、
-明るい天井や白い寝具の上でも読めるようにしています。
-
-**文字起こし** — Whisper large-v3（日本語指定）。連結後の音声とクリップ個別の音声で
-2通り実行し、結果が一致することを確認しました。
-
-```
-[00:01.46 – 00:02.92]  ほんとかわいい
-[00:16.34 – 00:18.96]  なんでいつもおならばっかりするんだろう
-[00:21.90 – 00:23.72]  たまにはおなら以外にしてよね
-```
-
-発話は上記3か所のみで、それ以外の音は効果音・環境音です。
-
-**字幕** — 上記のセリフを画面下部にピンクの太字で焼き込み（`scripts/subs.ass`）。
-
-- 書体 Noto Sans CJK JP **Bold**、色 `#FF5FAF`、濃いフチ＋ドロップシャドウ
-- 長いセリフは意味の切れ目で2行に改行
-- 各カット 0.15秒のフェードイン／アウト
-- 前後に少し余韻を足して読み切れる長さに調整
-- タイトルは画面上部、字幕は下部なので冒頭5秒でも重なりません
-
-## 作り直す場合 (`scripts/`)
-
-```sh
-apt-get install -y ffmpeg fonts-noto-cjk
-pip install Pillow faster-whisper
-
-./scripts/build.sh clip1.mov clip2.mov out.mp4
-```
+上の仕上げを、別のチャット・デスクトップ版の Claude が同じようにできるようにまとめたものです。
+このリポジトリを Claude Code で開くと自動で読み込まれます。`.skill` ファイルとして
+プロフィールに保存すれば、どのチャットでも使えます。
 
 | ファイル | 役割 |
 | --- | --- |
-| `build.sh` | 連結〜タイトル合成までの一括スクリプト |
-| `make_title.py` | タイトル画像 `title.png` の生成（Pillow） |
-| `title_filter.txt` | ffmpeg のオーバーレイ／アニメーション定義 |
-| `transcribe.py` | Whisper による文字起こし |
-| `title.png` | 生成済みのタイトル画像 |
+| `SKILL.md` | 完成形・作業の流れ・文字起こしと話者判定の判断基準 |
+| `references/lessons.md` | 実際に起きた失敗（取りこぼし・幻聴・ずれ・話者の取り違えなど）と見つけ方 |
+| `references/desktop-setup.md` | Mac / Windows の準備とエラー対処 |
+| `scripts/setup_check.py` | 環境チェック（足りないものの入れ方を OS ごとに表示） |
+| `scripts/analyze.py` | 文字起こしの調査（5通りの聞き方を1回で並べる）と区間の聞き直し |
+| `scripts/frames.py` | 指定時刻のコマを並べた画像（話者の確認用） |
+| `scripts/make_subs.py` | セリフ一覧から字幕（ASS）・SRT・文字起こし txt を生成 |
+| `scripts/make_title.py` | タイトル画像の生成 |
+| `scripts/render.py` | 連結・タイトル・字幕を1回で書き出して検品 |
+| `scripts/deliver.py` | デスクトップへの納品（上書きしない） |
+
+Mac / Windows / Linux で動きます。必要なのは ffmpeg（libass 入り）、Python 3.9 以上、
+faster-whisper、Pillow、日本語の太字フォントです（`setup_check.py` が確認と案内をします）。
+
+## 各動画の作業ファイル (`scripts/`)
+
+スキル化する前に、動画ごとに使ったタイトル画像・字幕定義（`subs_*.ass`）・ffmpeg のフィルタ定義です。
+新しく作るときはスキルの方を使ってください。

@@ -4,8 +4,9 @@
   # 1) 全体を調べる（クリップは番号順に並べて渡す）
   python analyze.py scan 001.mov 002.mov 003.mov --work WORK
 
-  # 2) 気になる区間だけ聞き直す（時刻は連結後の通し時刻・秒）
-  python analyze.py window WORK/audio_concat.wav 21.5 24.4 --lang ja
+  # 2) 気になる区間だけ聞き直す（時刻は連結後の通し時刻・秒）。区間はいくつでも並べられる
+  #    （モデルの読み込みに毎回20〜40秒かかるので、聞きたい区間はまとめて1回で渡す）
+  python analyze.py window WORK/audio_concat.wav 21.3 26.6  34.4 35.6 --lang ja
   python analyze.py window WORK/audio_concat.wav 6.6 9.2 --lang auto
   python analyze.py window WORK/audio_concat.wav 7.3 9.8 --models large-v3,large-v2,medium
   python analyze.py window WORK/audio_concat.wav 22.4 24.8 --hotwords 物の怪
@@ -43,8 +44,8 @@ LONG_WORD = 0.9         # 1語がこれ以上の長さなら「無音を抱き�
 
 # 無音・BGM・効果音の区間で Whisper が出しがちなフレーズ（実際に何度も出た）
 # EXACT は本物のセリフのこともあるので「弱」、CONTAINS はそれだけで「強」
-EXACT_HALLU = {"おわり", "you", "bye", "byebye", "thankyou", "thanks"}
-CONTAINS_HALLU = ["ご視聴ありがとうございました", "チャンネル登録", "thanksforwatching",
+EXACT_HALLU = {"おわり", "you", "bye", "byebye", "thankyou", "thanks", "ありがとうございました", "감사합니다"}
+CONTAINS_HALLU = ["ご視聴ありがとうございました", "チャンネル登録", "最後まで視聴", "ご覧いただき", "thanksforwatching",
                   "thankyouforwatching", "다음영상에서", "takkforwatching",
                   "seeyouinthenextvideo", "字幕は", "字幕作成", "字幕由",
                   # 各国語の「字幕: 〇〇」というクレジット（Whisper の定番の幻聴）
@@ -146,7 +147,10 @@ def _key(text: str) -> str:
 def mark_hallucination(seg: dict, total: float, lang_prob=None) -> dict:
     reasons, certain = [], False
     k = _key(seg["text"])
-    if any(p in k for p in CONTAINS_HALLU):
+    if not k:
+        reasons.append("文字が無い（記号・絵文字・♪だけ）")
+        certain = True
+    elif any(p in k for p in CONTAINS_HALLU):
         reasons.append("定番の幻聴フレーズ")
         certain = True
     elif k in EXACT_HALLU:
@@ -266,11 +270,14 @@ def same_utterance(s1: dict, s2: dict) -> bool:
     overlap = min(s1["end"], s2["end"]) - max(s1["start"], s2["start"])
     if overlap < -0.5:
         return False
-    return difflib.SequenceMatcher(None, _key(s1["text"]), _key(s2["text"])).ratio() >= 0.5
+    k1, k2 = _key(s1["text"]), _key(s2["text"])
+    if k1 and k2 and (k1 in k2 or k2 in k1):   # C は複数の行を1つにまとめることがある
+        return True
+    return difflib.SequenceMatcher(None, k1, k2).ratio() >= 0.5
 
 
 def fmt_words(seg: dict) -> str:
-    return " ".join(f"{w['w']}@{w['s']:.2f}({w['p']:.2f})" for w in seg["words"])
+    return " ".join(f"{w['w']}@{w['s']:.2f}-{w['e']:.2f}({w['p']:.2f})" for w in seg["words"])
 
 
 def ts(t: float) -> str:
@@ -325,7 +332,9 @@ def cmd_scan(a) -> None:
     for seg in A + B + C:
         mark_hallucination(seg, total)
 
-    covered = _merge([[w["s"] - 0.3, w["e"] + 0.3] for seg in A + B + C
+    # Whisper の語の時刻は早めに出がちで、実際の声は語の終わりの後も少し続く。
+    # 後ろを広めに見ておかないと、セリフの語尾が「文字の無い区間」として拾われて幻聴が出る
+    covered = _merge([[w["s"] - 0.3, w["e"] + 0.6] for seg in A + B + C
                       if seg["halluc"]["level"] != "強" for w in seg["words"]])
     wins = uncovered_windows(loud, covered, total)
     print(f"[D] 音があるのに文字が無い区間 {len(wins)} 個を言語自動判別で聞き直し …", flush=True)
@@ -374,7 +383,8 @@ def cmd_scan(a) -> None:
                               + ("（1秒以上なので、ここで行を分けてこの時刻を開始にする）" if pause >= 1.0
                                  else "（1秒未満なので分けなくてよい）"))
                     else:
-                        print(f"      ⚠「{w['w']}」が {w['e'] - w['s']:.1f} 秒と長い（ずれの疑い）")
+                        print(f"      ・「{w['w']}」が {w['e'] - w['s']:.1f} 秒と長いが、頭から声が続いている"
+                              "（ゆっくり言っているだけ。間は無いので1行のままでよい）")
 
     show("A: 連結・VADあり（基準）", A, words=True)
     show("B: 連結・VADなし", B)
@@ -386,7 +396,10 @@ def cmd_scan(a) -> None:
     for d in D:
         body = " / ".join(f"「{s['text']}」{'⚠' + s['halluc']['level'] if s['halluc']['level'] else ''}"
                           f" {fmt_words(s)}" for s in d["segments"]) or "（文字なし）"
-        print(f"{d['start']:6.2f}-{d['end']:6.2f}  lang={d['lang']}({d['lang_prob']:.2f})  {body}")
+        prev = [s for s in A + B + C if s["halluc"]["level"] != "強" and 0 <= d["start"] - s["end"] <= 1.2]
+        tail = (f"  ← 直前の「…{max(prev, key=lambda s: s['end'])['text'][-6:]}」の語尾かも"
+                if prev else "")
+        print(f"{d['start']:6.2f}-{d['end']:6.2f}  lang={d['lang']}({d['lang_prob']:.2f})  {body}{tail}")
         if "as_ja" in d:
             ja = " / ".join(f"「{s['text']}」{'⚠' + s['halluc']['level'] if s['halluc']['level'] else ''}"
                             f" {fmt_words(s)}" for s in d["as_ja"]) or "（文字なし）"
@@ -409,7 +422,7 @@ def cmd_scan(a) -> None:
     # ---------------------------------------------------------------- まとめ
     print("\n===== まとめ（ここを見て lines.json を作る） =====")
     base = [s for s in A if s["halluc"]["level"] != "強"]
-    print("セリフ候補（A 基準・幻聴の疑いが強いものは除外済み）:")
+    print("セリフ候補（A 基準・幻聴の疑いが強いものは除外済み。裏付け＝同じ内容が出た聞き方）:")
     for i, s in enumerate(base, 1):
         seen = "A" + ("B" if any(same_utterance(s, o) for o in B) else "") + \
                ("C" if any(same_utterance(s, o) for o in C) else "")
@@ -465,34 +478,41 @@ def mark_hallucination_list(segs, total):
 # ------------------------------------------------------------------ window
 
 def cmd_window(a) -> None:
+    if len(a.ranges) % 2:
+        sys.exit("区間は「開始 終了」の組で渡してください（例: 21.3 26.6 34.4 35.6）")
+    pairs = [(a.ranges[i], a.ranges[i + 1]) for i in range(0, len(a.ranges), 2)]
     x = read_wav(a.wav)
     total = len(x) / SR
     lang = None if a.lang == "auto" else a.lang
     _loud, thr, _floor = loud_regions(energy(x))
     for name in [m.strip() for m in a.models.split(",") if m.strip()]:
         model = load_model(name, a.device)
-        segs, info = decode_window(model, x, a.start, a.end, lang, prompt=a.prompt, hotwords=a.hotwords)
-        print(f"\n--- {name}  {a.start:.2f}-{a.end:.2f}  lang={info.language}({info.language_probability:.2f})"
-              + (f"  prompt={a.prompt!r}" if a.prompt else "") + (f"  hotwords={a.hotwords!r}" if a.hotwords else ""))
-        if not segs:
-            print("  （文字なし）")
-        for s in segs:
-            mark_hallucination(s, total, None if lang else info.language_probability)
-            h = s["halluc"]
-            print(f"  [{ts(s['start'])} -> {ts(s['end'])}] {s['text']}"
-                  + (f"   ⚠幻聴の疑い({h['level']}): {', '.join(h['reasons'])}" if h["level"] else ""))
-            print(f"      {fmt_words(s)}")
-        o = start_hint(x, segs, a.start, thr)
-        if o is not None:
-            print(f"  ※ 先頭の語が区間の開始に張り付いている／長すぎる。音の立ち上がり ≈ {o:.2f} 秒 → これを開始時刻にする")
-        first = segs[0]["words"][0] if segs and segs[0]["words"] else None
-        for s in segs:
-            for w in long_words(s):
-                if w is first and o is not None:
-                    continue                    # すぐ上で報告済み
-                wo = word_onset(x, w, thr)
-                if wo:
-                    print(f"  ※「{w['w']}」が {w['e'] - w['s']:.1f} 秒と長い → 音の立ち上がり ≈ {wo:.2f} 秒")
+        for st, en in pairs:
+            segs, info = decode_window(model, x, st, en, lang, prompt=a.prompt, hotwords=a.hotwords)
+            print(f"\n--- {name}  {st:.2f}-{en:.2f}  lang={info.language}({info.language_probability:.2f})"
+                  + (f"  prompt={a.prompt!r}" if a.prompt else "") + (f"  hotwords={a.hotwords!r}" if a.hotwords else ""))
+            if not segs:
+                print("  （文字なし）")
+            for s in segs:
+                mark_hallucination(s, total, None if lang else info.language_probability)
+                h = s["halluc"]
+                print(f"  [{ts(s['start'])} -> {ts(s['end'])}] {s['text']}"
+                      + (f"   ⚠幻聴の疑い({h['level']}): {', '.join(h['reasons'])}" if h["level"] else ""))
+                print(f"      {fmt_words(s)}")
+            o = start_hint(x, segs, st, thr)
+            if o is not None:
+                print(f"  ※ 先頭の語が区間の開始に張り付いている／長すぎる（区間の切り方の影響）。音の立ち上がり ≈ {o:.2f} 秒。\n"
+                      "    scan で「語間の空白」「長すぎる語（間1秒以上）」と出た行ならこれを開始に使う。"
+                      "それ以外の行は scan の A の時刻のままでよい")
+            first = segs[0]["words"][0] if segs and segs[0]["words"] else None
+            for s in segs:
+                for w in long_words(s):
+                    if w is first and o is not None:
+                        continue                # すぐ上で報告済み
+                    wo = word_onset(x, w, thr)
+                    if wo:
+                        print(f"  ※「{w['w']}」が {w['e'] - w['s']:.1f} 秒と長い → 前に約 {wo - w['s']:.1f} 秒の間。"
+                              f"音の立ち上がり ≈ {wo:.2f} 秒")
         del model
 
 
@@ -507,8 +527,7 @@ def main() -> None:
     s.add_argument("--device", default="cpu", help="cpu / cuda")
     w = sub.add_parser("window", help="区間を聞き直す")
     w.add_argument("wav", help="scan が作った audio_concat.wav")
-    w.add_argument("start", type=float)
-    w.add_argument("end", type=float)
+    w.add_argument("ranges", nargs="+", type=float, help="開始 終了 [開始 終了 ...]（秒）。まとめて渡すと速い")
     w.add_argument("--lang", default="ja", help="ja / en / auto など")
     w.add_argument("--models", default="large-v3",
                    help="カンマ区切り。例 large-v3,large-v2,medium（large-v2 と medium は初回ダウンロードあり）")
