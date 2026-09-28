@@ -15,6 +15,7 @@
 | 電話にでないと… | `denwa_final.mp4` | `transcript_denwa.txt` / `.srt` |
 | 悪だくみ | `warudakumi_final.mp4` | `transcript_warudakumi.txt` / `.srt` |
 | シバネコガール | `shibanekogirl_final.mp4` | `transcript_shibanekogirl.txt` / `.srt` |
+| 気にするよ… | `kinisuruyo_final.mp4` | `transcript_kinisuruyo.txt` / `.srt` |
 
 文字起こしの txt には、時刻・話者・判断したこと（除外した幻聴、話者の決め手など）の補足が付いています。
 
