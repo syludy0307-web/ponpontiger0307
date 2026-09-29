@@ -41,6 +41,8 @@ import common  # noqa: E402
 SR = 16000
 GAP_WARN = 0.8          # 1つの発話の中で語の間がこれ以上空いたら「ずれ・合体の疑い」
 LONG_WORD = 0.9         # 1語がこれ以上の長さなら「無音を抱き込んだずれの疑い」
+LONG_LINE_SEC = 5.0     # 1行がこれ以上の長さ・文字数なら、複数の文が1行にまとめられている疑い
+LONG_LINE_CHARS = 28    # （字幕1枚に収まるのは2行×13文字くらいまで）
 
 # 無音・BGM・効果音の区間で Whisper が出しがちなフレーズ（実際に何度も出た）
 # EXACT は本物のセリフのこともあるので「弱」、CONTAINS はそれだけで「強」
@@ -252,6 +254,43 @@ def internal_gaps(seg: dict) -> list:
             if ws[k]["s"] - ws[k - 1]["e"] >= GAP_WARN]
 
 
+def internal_silences(x: np.ndarray, seg: dict, quiet: float, voice: float, min_len: float = 0.35) -> list:
+    """1つの行の途中にある無音（quiet dB 未満が min_len 秒以上）と、その後の声の出だし。
+
+    Whisper（VADあり）は、無音をはさんだ別々の文を1行にまとめることがある。そのとき語の時刻は
+    無音をまたいで引き伸ばされるので「語間の空白」「長すぎる語」には出てこない
+    （例: 3つの文が 0〜7秒の1行になり、文の間の0.5秒の無音が語の中に埋もれていた）。
+    語間の空白・長すぎる語と重なる無音は、そちらの判定に任せて返さない。
+    行の頭の無音（その前に声が無い）も「途中」ではないので返さない。
+    quiet は小さめの声を無音と取り違えないよう、床の音量に近い値を渡す。
+    """
+    skip = [(g0, g1) for g0, g1, _k in internal_gaps(seg)] + [(w["s"], w["e"]) for w in long_words(seg)]
+    out, run0 = [], None
+    end = seg["end"] - 0.2
+    for t, db in frame_db(x, seg["start"] + 0.2, end) + [(end, 0.0)]:   # 最後の (end, 0.0) は無音を閉じるため
+        if db < quiet:
+            run0 = t if run0 is None else run0
+            continue
+        if (run0 is not None and t - run0 >= min_len and not any(a < t and run0 < b for a, b in skip)
+                and onset(x, seg["start"], run0, voice) is not None):
+            o = onset(x, t, seg["end"], voice)
+            if o is not None:
+                out.append((round(run0, 2), round(t, 2), o))
+        run0 = None
+    return out
+
+
+def splits_here(segs: list, q0: float, o: float) -> bool:
+    """q0 秒からの無音〜声の出だし o 秒のあたりで、segs のある行が終わり、別の行が始まっているか。
+
+    行の始まりや終わりが近くにあるだけ（B が「はぁ」を落として始まった、行の終わりが同じ）は数えない。
+    """
+    lo, hi = q0 - 0.5, o + 0.3
+    ends = [s["end"] for s in segs if lo <= s["end"] <= hi]
+    starts = [s["start"] for s in segs if lo <= s["start"] <= hi]
+    return any(st >= en - 0.05 for en in ends for st in starts)
+
+
 def _merge(spans: list) -> list:
     out = []
     for a, b in sorted(spans):
@@ -306,7 +345,17 @@ def same_utterance(s1: dict, s2: dict) -> bool:
     k1, k2 = _key(s1["text"]), _key(s2["text"])
     if k1 and k2 and (k1 in k2 or k2 in k1):   # C は複数の行を1つにまとめることがある
         return True
-    return difflib.SequenceMatcher(None, k1, k2).ratio() >= 0.5
+    sm = difflib.SequenceMatcher(None, k1, k2)
+    if sm.ratio() >= 0.5:
+        return True
+    # A も複数の文を1行にまとめることがあり、漢字とかなの違い（皆さん／みなさん）があると上の2つでは
+    # 同じ発話と分からない。短い方が長い方の時間内にあり、文字の大半が同じ順で出ていれば同じとみなす
+    short, long_ = (s1, s2) if len(k1) <= len(k2) else (s2, s1)
+    n = min(len(k1), len(k2))
+    if n >= 4 and short["start"] >= long_["start"] - 0.5 and short["end"] <= long_["end"] + 0.5:
+        blocks = [b.size for b in sm.get_matching_blocks()]
+        return sum(blocks) >= 0.6 * n and max(blocks) >= 2
+    return False
 
 
 def fmt_words(seg: dict) -> str:
@@ -453,9 +502,22 @@ def cmd_scan(a) -> None:
             print(f"   ※ 後半の先頭の語が区間の開始に張り付いている。音の立ち上がり ≈ {e['after']['onset']:.2f} 秒"
                   " → これを開始時刻にする")
 
-    # ---------------------------------------------------------------- まとめ
+    print_summary(A, B, C, D, E, x, thr, floor, vthr, total)
+
+    report = {"clips": clips, "bounds": bounds, "total": total, "audio_concat": str(concat_path),
+              "energy": prof, "threshold_db": thr, "floor_db": floor, "loud_regions": loud,
+              "A_vad": A, "B_novad": B, "C_per_clip": C, "D_uncovered": D, "E_gaps": E}
+    (work / "analysis.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"\n保存: {work / 'analysis.json'}")
+    print(f"聞き直し用の連結音声: {concat_path}")
+
+
+def print_summary(A, B, C, D, E, x, thr, floor, vthr, total) -> None:
+    """scan の最後の「まとめ」。analysis.json と audio_concat.wav から出し直すこともできる。"""
     print("\n===== まとめ（ここを見て lines.json を作る） =====")
     base = [s for s in A if s["halluc"]["level"] != "強"]
+    real_b = [s for s in B if s["halluc"]["level"] != "強"]
+    quiet = min(thr, floor + 3.0)           # 行の途中の「無音」。小さめの声（語尾など）は無音に数えない
     print("セリフ候補（A 基準・幻聴の疑いが強いものは除外済み。裏付け＝同じ内容が出た聞き方）:")
     for i, s in enumerate(base, 1):
         seen = "A" + ("B" if any(same_utterance(s, o) for o in B) else "") + \
@@ -469,16 +531,33 @@ def cmd_scan(a) -> None:
             if o and o - w["s"] >= 1.0:
                 notes.append(f"「{w['w']}」の前に約{o - w['s']:.1f}秒の間 → ここで行を分け、後ろは {o:.2f} 秒開始")
         prev = base[i - 2] if i >= 2 else None
+        glued = None
         if prev and s["start"] - prev["end"] < 0.15 and not internal_gaps(s):
             o = onset_after_silence(x, s["start"], min(total, s["start"] + 1.6), thr, vthr)
             if o and o > s["start"] + 0.3:
+                glued = o
                 notes.append(f"前の行とくっついている → 無音のあと {o:.2f} 秒から声。開始はこちらにする")
         # ※ ふつうの行の開始時刻は Whisper のままでよい（0.3秒ほど早めに出がちだが、字幕が少し早く出るぶんには
         #    問題にならなかった）。音量から推定し直すと、ため息など小さな声で始まる行で遅れる方向に外れる。
+        n_chars = len(_key(s["text"]))
+        if not internal_gaps(s) and (s["end"] - s["start"] >= LONG_LINE_SEC or n_chars >= LONG_LINE_CHARS):
+            notes.append(f"長い行（{s['end'] - s['start']:.1f}秒・{n_chars}文字）→ 複数の文がまとめられていないか、"
+                         "下の無音の所と B の区切りを見る。字幕1枚に収まらないなら文ごとに分ける")
+        for q0, q1, o in internal_silences(x, s, quiet, vthr):
+            if glued is not None and o <= glued + 0.1:
+                continue                    # 行の頭の無音（「くっついている」で扱った）
+            if splits_here(real_b, q0, o):
+                notes.append(f"行の途中 {q0:.2f}–{q1:.2f} 秒が無音で、B もここで区切っている → 前で文が言い終わって"
+                             f"いれば（「元気？」「〜みたい」など）行を分け、後ろは {o:.2f} 秒開始。"
+                             "「はぁ、」「お姉さん、」のような呼びかけ・言いかけの後なら1行のまま「、」")
+            else:
+                notes.append(f"行の途中 {q0:.2f}–{q1:.2f} 秒に間（B は区切っていない → ふつうは1行のまま、"
+                             f"ここに「、」。分けるなら後ろは {o:.2f} 秒開始）")
         if s["halluc"]["level"]:
             notes.append("幻聴の疑い(弱)")
-        print(f"  {i:2d} [{ts(s['start'])} – {ts(s['end'])}] {s['text']}   裏付け:{seen}"
-              + (f"   ※{' / '.join(notes)}" if notes else ""))
+        print(f"  {i:2d} [{ts(s['start'])} – {ts(s['end'])}] {s['text']}   裏付け:{seen}")
+        for msg in notes:
+            print(f"        ※ {msg}")
 
     extra = [s for s in B + C if s["halluc"]["level"] != "強" and not any(same_utterance(s, o) for o in A)]
     if extra:
@@ -499,13 +578,6 @@ def cmd_scan(a) -> None:
         print(f"幻聴として除外したもの {len(dropped)} 件（例）:")
         for s in dropped[:6]:
             print(f"     [{ts(s['start'])} – {ts(s['end'])}] 「{s['text']}」 {', '.join(s['halluc']['reasons'])}")
-
-    report = {"clips": clips, "bounds": bounds, "total": total, "audio_concat": str(concat_path),
-              "energy": prof, "threshold_db": thr, "floor_db": floor, "loud_regions": loud,
-              "A_vad": A, "B_novad": B, "C_per_clip": C, "D_uncovered": D, "E_gaps": E}
-    (work / "analysis.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(f"\n保存: {work / 'analysis.json'}")
-    print(f"聞き直し用の連結音声: {concat_path}")
 
 
 def mark_hallucination_list(segs, total):
