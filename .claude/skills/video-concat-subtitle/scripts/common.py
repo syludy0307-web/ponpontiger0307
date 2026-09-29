@@ -121,15 +121,22 @@ def probe(path) -> dict:
 
 
 def clip_number(path) -> tuple:
-    """ファイル名の番号で並べるためのキー。'94d49f9c-001.mov' → 1。
+    """ファイル名の番号で並べるためのキー。'94d49f9c-001.mov' → 1、'a899e2b6-B.mov' → 2（B）。
 
     アップロード順やフォルダの表示順は当てにならない（003 が先頭で届いたことがある）。
-    先頭のハッシュ風の文字列に含まれる数字に引っぱられないよう、
-    拡張子の直前にある数字のかたまりを番号とみなす。
+    拡張子の直前にある数字のかたまりを番号とみなし、数字が無ければ末尾の1文字の
+    アルファベット（A.mov / B.mov）を ABC 順の番号にする。アップロードで先頭に付く
+    8桁の英数字（'94d49f9c-'）は番号ではないので外してから見る（外さないと 'a899e2b6-A' が 6 になる）。
     """
     stem = Path(path).stem
-    m = re.search(r"(\d+)\D*$", stem)
-    return (int(m.group(1)) if m else 10 ** 9, stem)
+    body = re.sub(r"^[0-9a-f]{8}-", "", stem)
+    m = re.search(r"(\d+)\D*$", body)
+    if m:
+        return (int(m.group(1)), stem)
+    m = re.search(r"(?:^|[^A-Za-z])([A-Za-z])$", body)
+    if m:
+        return (ord(m.group(1).upper()) - ord("A") + 1, stem)
+    return (10 ** 9, stem)
 
 
 # ------------------------------------------------------------------ デスクトップ
