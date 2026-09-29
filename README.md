@@ -18,6 +18,7 @@
 | 気にするよ… | `kinisuruyo_final.mp4` | `transcript_kinisuruyo.txt` / `.srt` |
 | （タイトルなし） | `otomodachi_final.mp4` | `transcript_otomodachi.txt` / `.srt` |
 | 暴かれた嘘 | `abakaretauso_final.mp4` | `transcript_abakaretauso.txt` / `.srt` |
+| マニア | `mania_final.mp4` | `transcript_mania.txt` / `.srt` |
 
 文字起こしの txt には、時刻・話者・判断したこと（除外した幻聴、話者の決め手など）の補足が付いています。
 
