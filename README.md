@@ -22,6 +22,7 @@
 | また足? | `mataashi_final.mp4` | `transcript_mataashi.txt` / `.srt` |
 | なんともいえない… | `nantomoienai_final.mp4` | `transcript_nantomoienai.txt` / `.srt` |
 | ホスト？ | `hosuto_final.mp4` | `transcript_hosuto.txt` / `.srt` |
+| 映画化拒否 | `eigakakyohi_final.mp4` | `transcript_eigakakyohi.txt` / `.srt` |
 
 文字起こしの txt には、時刻・話者・判断したこと（除外した幻聴、話者の決め手など）の補足が付いています。
 
