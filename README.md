@@ -27,7 +27,7 @@
 | （タイトルなし） | `tomodachishokai_final.mp4` | `transcript_tomodachishokai.txt` / `.srt` |
 | 神出鬼没 | `shinshutsukibotsu_final.mp4` | `transcript_shinshutsukibotsu.txt` / `.srt` |
 | 気づき | `kizuki_final.mp4` | `transcript_kizuki.txt` / `.srt` |
-| （タイトルなし・文字起こしのみ） | — | `transcript_supure.txt` / `.srt` |
+| （タイトルなし） | `supure_final.mp4` | `transcript_supure.txt` / `.srt` |
 
 文字起こしの txt には、時刻・話者・判断したこと（除外した幻聴、話者の決め手など）の補足が付いています。
 
