@@ -8,6 +8,7 @@
 - 解像度と fps は1本目に合わせる。大きさの違うクリップは縮小＋余白で揃える
 - 音声の無いクリップは無音で埋める
 - タイトルは冒頭 --title-seconds 秒（既定 5 秒）。--title を省けばタイトルなし
+- --audio を渡すと、クリップの音声の代わりにその音声を使う（replace_voice.py で声を差し替えたとき）
 - 書き出したら尺・フレーム数・デコードエラー・音量を検査し、
   タイトルと各字幕の場面を並べたレビュー画像（WORK/review.jpg）を作る。必ず目で見ること
 """
@@ -26,7 +27,7 @@ import frames  # noqa: E402
 from make_title import make_title  # noqa: E402
 
 
-def build_graph(clips, W, H, fps_str, title=None, T=5.0, ass_name=None):
+def build_graph(clips, W, H, fps_str, title=None, T=5.0, ass_name=None, audio=True):
     parts = []
     for i, c in enumerate(clips):
         chain = []
@@ -34,12 +35,17 @@ def build_graph(clips, W, H, fps_str, title=None, T=5.0, ass_name=None):
             chain += [f"scale={W}:{H}:force_original_aspect_ratio=decrease", f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2"]
         chain += [f"fps={fps_str}", "format=yuv420p", "setsar=1"]
         parts.append(f"[{i}:v]{','.join(chain)}[v{i}]")
+        if not audio:
+            continue
         if c["has_audio"]:
             parts.append(f"[{i}:a]aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[a{i}]")
         else:
             parts.append(f"aevalsrc=0|0:d={c['duration']:.3f}:s=48000:c=stereo,aformat=sample_fmts=fltp[a{i}]")
     n = len(clips)
-    parts.append("".join(f"[v{i}][a{i}]" for i in range(n)) + f"concat=n={n}:v=1:a=1[vc][ac]")
+    if audio:
+        parts.append("".join(f"[v{i}][a{i}]" for i in range(n)) + f"concat=n={n}:v=1:a=1[vc][ac]")
+    else:
+        parts.append("".join(f"[v{i}]" for i in range(n)) + f"concat=n={n}:v=1:a=0[vc]")
     cur = "[vc]"
     if title:
         ys, yf, drift = -title["h"], title["yf"], title["drift"]
@@ -87,6 +93,7 @@ def main() -> None:
     ap.add_argument("--ass", default=None, help="make_subs.py が作った subs.ass")
     ap.add_argument("--work", required=True, help="作業フォルダ（中間ファイルとレビュー画像の置き場）")
     ap.add_argument("--out", required=True, help="書き出す mp4")
+    ap.add_argument("--audio", default=None, help="クリップの音声の代わりに使う音声（replace_voice.py の voice_mix.wav）")
     a = ap.parse_args()
 
     work = Path(a.work).resolve()
@@ -108,13 +115,17 @@ def main() -> None:
         ass_name = "_render_subs.ass"   # 作業フォルダ内の相対パスで渡す（Windows のドライブ名のエスケープ地獄を避ける）
         shutil.copyfile(a.ass, work / ass_name)
 
-    graph, vout = build_graph(clips, W, H, fps_str, title, T, ass_name)
+    graph, vout = build_graph(clips, W, H, fps_str, title, T, ass_name, audio=not a.audio)
     cmd = [common.ffmpeg(), "-hide_banner", "-v", "error", "-nostats", "-y"]
     for c in clips:
         cmd += ["-i", c["path"]]
     if title:
         cmd += ["-framerate", fps_str, "-loop", "1", "-t", f"{T:.2f}", "-i", str(work / "title.png")]
-    cmd += ["-filter_complex", graph, "-map", vout, "-map", "[ac]",
+    aout, limit = "[ac]", []
+    if a.audio:                         # 差し替えた音声を使う。長さは動画（素材の合計）に合わせる
+        cmd += ["-i", str(Path(a.audio).resolve())]
+        aout, limit = f"{len(clips) + (1 if title else 0)}:a", ["-t", f"{total:.3f}"]
+    cmd += ["-filter_complex", graph, "-map", vout, "-map", aout, *limit,
             "-c:v", "libx264", "-crf", "18", "-preset", "slow", "-pix_fmt", "yuv420p", "-profile:v", "high",
             "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", str(out)]
     (work / "render_cmd.txt").write_text(" ".join(f'"{x}"' if " " in x else x for x in cmd), encoding="utf-8")

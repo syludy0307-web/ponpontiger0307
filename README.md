@@ -26,7 +26,7 @@
 | わざわざ遊園地きたのに… | `wazawazayuenchi_final.mp4` | `transcript_wazawazayuenchi.txt` / `.srt` |
 | （タイトルなし） | `tomodachishokai_final.mp4` | `transcript_tomodachishokai.txt` / `.srt` |
 | 神出鬼没 | `shinshutsukibotsu_final.mp4` | `transcript_shinshutsukibotsu.txt` / `.srt` |
-| 気づき | `kizuki_final.mp4` | `transcript_kizuki.txt` / `.srt` |
+| 気づき（最後のセリフの声を差し替え） | `kizuki_final.mp4` | `transcript_kizuki.txt` / `.srt` |
 | （タイトルなし） | `supure_final.mp4` | `transcript_supure.txt` / `.srt` |
 
 文字起こしの txt には、時刻・話者・判断したこと（除外した幻聴、話者の決め手など）の補足が付いています。
@@ -60,7 +60,8 @@
 | `scripts/frames.py` | 指定時刻のコマを並べた画像（話者の確認用） |
 | `scripts/make_subs.py` | セリフ一覧から字幕（ASS）・SRT・文字起こし txt を生成 |
 | `scripts/make_title.py` | タイトル画像の生成 |
-| `scripts/render.py` | 連結・タイトル・字幕を1回で書き出して検品 |
+| `scripts/render.py` | 連結・タイトル・字幕を1回で書き出して検品（`--audio` で差し替えた音声を使う） |
+| `scripts/replace_voice.py` | セリフの声を別の音声（ElevenLabs の mp3 など）に差し替えた音声を作る |
 | `scripts/deliver.py` | デスクトップへの納品（上書きしない） |
 
 Mac / Windows / Linux で動きます。必要なのは ffmpeg（libass 入り）、Python 3.9 以上、
