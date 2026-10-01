@@ -25,6 +25,7 @@
 | 映画化拒否 | `eigakakyohi_final.mp4` | `transcript_eigakakyohi.txt` / `.srt` |
 | わざわざ遊園地きたのに… | `wazawazayuenchi_final.mp4` | `transcript_wazawazayuenchi.txt` / `.srt` |
 | （タイトルなし） | `tomodachishokai_final.mp4` | `transcript_tomodachishokai.txt` / `.srt` |
+| 神出鬼没 | `shinshutsukibotsu_final.mp4` | `transcript_shinshutsukibotsu.txt` / `.srt` |
 
 文字起こしの txt には、時刻・話者・判断したこと（除外した幻聴、話者の決め手など）の補足が付いています。
 
