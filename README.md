@@ -29,6 +29,7 @@
 | 気づき（最後のセリフの声を差し替え） | `kizuki_final.mp4` | `transcript_kizuki.txt` / `.srt` |
 | （タイトルなし） | `supure_final.mp4` | `transcript_supure.txt` / `.srt` |
 | 友達の彼氏 | `tomodachinokareshi_final.mp4` | `transcript_tomodachinokareshi.txt` / `.srt` |
+| もし…だよ？ | `moshidayo_final.mp4` | `transcript_moshidayo.txt` / `.srt` |
 
 文字起こしの txt には、時刻・話者・判断したこと（除外した幻聴、話者の決め手など）の補足が付いています。
 
