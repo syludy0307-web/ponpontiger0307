@@ -1,5 +1,5 @@
 /**
- * 踊るフィリピン豆知識 #02「フィリピンのクリスマスはいつ終わる？」— 編集用の設定ファイル
+ * 踊るフィリピン豆知識 #03「フィリピンのクリスマス、お年玉は誰から？」— 編集用の設定ファイル
  *
  * 素材・区間・文言・切り替えタイミング・文字サイズ・位置・色は、すべてここで変更できます。
  * 座標はすべて 1080x1920 の完成画面上の px です。
@@ -24,7 +24,7 @@ export const HEIGHT = 1920;
 export const config = {
   video: {
     /** 入力動画(public/ からの相対パス)。元ファイルは上書きしません */
-    src: 'input/ep02.mp4',
+    src: 'input/ep03.mp4',
     /** 使用区間の開始位置(秒)。区間指定がなければ 0 = 先頭から */
     trimStartSeconds: 0,
     /**
@@ -38,46 +38,47 @@ export const config = {
 
   /** 書き出し先(npm run render) */
   output: {
-    file: 'output/philippines_christmas_end_dance_20s.mp4',
+    file: 'output/philippines_godparent_money_dance_15s.mp4',
   },
 
   /** 各シーンの開始フレーム(30fps)。シーンは次のシーンの開始直前まで表示 */
   scenes: {
     quiz: 0, // 0.00秒  クイズ
-    answer: 120, // 4.00秒  答え
+    answer: 124, // 4.13秒  答え(#03 は 4.13秒に強い拍があるので、指示書の ±0.2秒の範囲で合わせた)
     explain: 225, // 7.50秒  解説
     recap: 345, // 11.50秒 復習と締め(エンドカードの直前まで)
   },
 
   texts: {
-    series: {title: '踊るフィリピン豆知識', episode: '#02'},
+    series: {title: '踊るフィリピン豆知識', episode: '#03'},
     quiz: {
-      line1: [{text: 'フィリピンの'}, {text: 'クリスマス', highlight: true}, {text: 'は'}] as RichLine,
-      line2: [{text: 'いつ', highlight: true, bounce: true}, {text: '終わる？'}] as RichLine,
+      line1: [{text: 'フィリピンの'}, {text: 'クリスマス', highlight: true}] as RichLine,
+      line2: [{text: 'お年玉は'}, {text: '誰', highlight: true, bounce: true}, {text: 'から？'}] as RichLine,
     },
     answer: {
       line1: [{text: '正解は…'}] as RichLine,
-      line2: [{text: '1月！', highlight: true}] as RichLine,
+      line2: [{text: '名付け親！', highlight: true}] as RichLine,
     },
     explain: {
-      line1: [{text: '三賢者の日', highlight: true, underline: true}, {text: 'まで'}] as RichLine,
-      line2: [{text: '＝1月の第1日曜日'}] as RichLine,
+      line1: [{text: 'aguinaldo', highlight: true, underline: true}] as RichLine,
+      line2: [{text: '＝名付け親からのお金や贈り物'}] as RichLine,
     },
     recap: {
-      line1: [{text: '1月', highlight: true}, {text: 'まで'}, {text: 'クリスマス', highlight: true}] as RichLine,
+      line1: [{text: '名付け親', highlight: true}, {text: 'の'}, {text: 'お年玉', highlight: true}] as RichLine,
       line2: [{text: '知ってた？'}] as RichLine,
     },
   },
 
   /** 答えの横に出すアイコン: 'calendar'(カレンダー) / 'parol'(星形ランタン) / 'toilet'(トイレ案内) / 'none'(なし) */
-  answerIcon: 'calendar' as 'calendar' | 'parol' | 'toilet' | 'none',
+  answerIcon: 'none' as 'calendar' | 'parol' | 'toilet' | 'none',
 
   /**
    * 最後に足すエンドカード(ダンスは止めずに、その上に重ねる)。
-   * enabled: false にすると豆知識パートだけの動画になります
+   * enabled: false にすると豆知識パートだけの動画になります。
+   * #03 は素材が15.1秒しかなく5秒を足せない(ループ・静止画での水増しはしない)ため、付けない
    */
   endCard: {
-    enabled: true,
+    enabled: false,
     seconds: 5,
     label: '所属',
     club: 'JTV PlayBoyClub',
@@ -89,10 +90,11 @@ export const config = {
   /** 文字サイズ(px) */
   fontSize: {
     series: 32, // シリーズ名 30〜36
-    sub: 54, // 補足文 48〜60(「フィリピンのクリスマスは」「正解は…」「＝1月の第1日曜日」)
-    main: 92, // 質問・解説 76〜100(「いつ終わる？」「三賢者の日まで」)
-    answer: 146, // 「1月！」130〜150(動画内で最大)
-    recap: 84, // 復習 76〜100(「1月までクリスマス」が1行に収まる大きさ)
+    sub: 50, // 補足文 48〜60(「フィリピンのクリスマス」「＝名付け親からのお金や贈り物」)
+    main: 88, // 質問・解説 76〜100(「お年玉は誰から？」「aguinaldo」)
+    answer: 134, // 「名付け親！」130〜150(動画内で最大)
+    answerLabel: 44, // 「正解は…」を縦書きにする時の大きさ(layout.answerLabel = 'vertical')
+    recap: 84, // 復習 76〜100(「名付け親のお年玉」)
     recapSub: 66, // 「知ってた？」(復習より少し小さく)
     questionMark: 66, // クイズ横の「？」
   },
@@ -100,7 +102,7 @@ export const config = {
   layout: {
     /**
      * テロップの上端 Y。人物の頭上の空きに収める位置。
-     * #02 の素材は頭の位置が高い(額が最も上で y≈393)ため、上端180pxの余白ぎりぎりから始める
+     * #02・#03 の素材は頭の位置が高い(額が最も上で y≈393〜398)ため、上端180pxの余白ぎりぎりから始める
      */
     captionTop: 188,
     /** テロップの中心 X */
@@ -113,12 +115,19 @@ export const config = {
     underlineExtraGap: 20,
     /** 行の高さ(文字サイズに対する倍率) */
     lineHeight: 1.14,
-    /** シリーズ名の位置(#02 は頭上の帯をテロップに使うため、左下の余白。下端360pxの内側) */
+    /** シリーズ名の位置(頭上の帯をテロップに使う回は、左下の余白。下端360pxの内側) */
     seriesLabel: {left: 80, top: 1488},
     /** 答えの横のアイコンの高さ(px) */
     iconSize: 172,
     /** 答えの文字とアイコンの間隔(px) */
     iconGap: 30,
+    /**
+     * 答えの「正解は…」の置き方: 'stacked' = 答えの上の行 / 'vertical' = 答えの左に小さく縦書き(1段で収まる)。
+     * #03 は 5.6〜6.2秒に顔が y≈398 まで上がるため、答えを1段に収める 'vertical'
+     */
+    answerLabel: 'vertical' as 'stacked' | 'vertical',
+    /** クイズ横の「？」: 'both' = 左右に2つ / 'left' = 左に1つ(質問の行が長い時) */
+    questionMarks: 'left' as 'both' | 'left',
   },
 
   colors: {

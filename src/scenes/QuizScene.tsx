@@ -15,9 +15,16 @@ export const QuizScene: React.FC = () => {
     <CaptionBlock>
       <OutlinedLine line={quiz.line1} fontSize={config.fontSize.sub} />
       <div style={{position: 'relative'}}>
-        <QuestionMark frame={frame} start={9} side="left" tilt={-14} size={config.fontSize.questionMark * 0.85} />
+        <QuestionMark
+          frame={frame}
+          start={config.layout.questionMarks === 'both' ? 9 : 5}
+          side="left"
+          tilt={-14}
+          highlight={config.layout.questionMarks !== 'both'}
+          size={config.layout.questionMarks === 'both' ? config.fontSize.questionMark * 0.85 : config.fontSize.questionMark}
+        />
         <OutlinedLine line={quiz.line2} fontSize={config.fontSize.main} bounce={bounce} />
-        <QuestionMark frame={frame} start={5} side="right" tilt={14} highlight />
+        {config.layout.questionMarks === 'both' ? <QuestionMark frame={frame} start={5} side="right" tilt={14} highlight /> : null}
       </div>
     </CaptionBlock>
   );

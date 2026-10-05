@@ -47,6 +47,8 @@ type Props = {
   underline?: number[];
   /** 行の最大幅(px)。超えたら縮小して収める */
   maxWidth?: number;
+  /** 縦書きにする(「正解は…」などの短いラベル用) */
+  vertical?: boolean;
 };
 
 /**
@@ -60,6 +62,7 @@ export const OutlinedLine: React.FC<Props> = ({
   bounce,
   underline,
   maxWidth = config.layout.maxLineWidth,
+  vertical = false,
 }) => {
   const outline = Math.max(4, Math.round(fontSize * config.outlineRatio));
   const ref = useRef<HTMLDivElement>(null);
@@ -68,9 +71,12 @@ export const OutlinedLine: React.FC<Props> = ({
 
   // はみ出し防止: 行幅(縁取り込み)が最大幅を超える場合だけ縮小
   useLayoutEffect(() => {
+    if (vertical) {
+      return;
+    }
     const width = (ref.current?.offsetWidth ?? 0) + outline * 2;
     setFit(width > maxWidth ? maxWidth / width : 1);
-  }, [textKey, fontSize, maxWidth, outline]);
+  }, [textKey, fontSize, maxWidth, outline, vertical]);
 
   const renderSegments = (layer: 'outline' | 'fill') => {
     let underlineIndex = 0;
@@ -109,7 +115,8 @@ export const OutlinedLine: React.FC<Props> = ({
           fontWeight: weight,
           fontSize,
           lineHeight: config.layout.lineHeight,
-          fontFeatureSettings: '"palt" 1',
+          writingMode: vertical ? 'vertical-rl' : undefined,
+          fontFeatureSettings: vertical ? '"vpal" 1' : '"palt" 1',
         }}
       >
         <div
