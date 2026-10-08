@@ -33,6 +33,7 @@
 | 秋 | `aki_final.mp4` | `transcript_aki.txt` / `.srt` |
 | （タイトルなし） | `anken_final.mp4` | `transcript_anken.txt` / `.srt` |
 | 2倍 | `nibai_final.mp4` | `transcript_nibai.txt` / `.srt` |
+| 幸せ　完結編 | `shiawasekanketsuhen_final.mp4` | `transcript_shiawasekanketsuhen.txt` / `.srt` |
 
 文字起こしの txt には、時刻・話者・判断したこと（除外した幻聴、話者の決め手など）の補足が付いています。
 

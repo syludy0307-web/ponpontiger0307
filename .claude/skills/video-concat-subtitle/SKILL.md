@@ -103,8 +103,8 @@ python <スキル>/scripts/setup_check.py
 並べて渡します（渡した順に連結されます）。決めた順番は最初にユーザーへ一言伝え、
 番号が読み取れないファイルがあれば順番を聞きます。
 Seedance で作った動画は、プロンプトの文がそのままファイル名になっていて番号が無いことがあります。
-名前の中の数字（`vertical_916`・`15_sec` など）は順番ではありません。`Extend_the_video_FORWARDS`
-（`Continue ... from the last frame of Video 1`）とある方が続きなので後ろ、`BACKWARDS` なら前です。
+名前の中の数字（`vertical_916`・`15_sec` など）は順番ではありません。`Extend_the_video_FORWARDS` や
+`Continue_seamlessly_from_the_last_frame` とある方が続きなので後ろ、`BACKWARDS` なら前です。
 `frames.py` で1本目の最後と2本目の最初のコマを並べ、同じ場面で続いていることを確かめてから
 その順番で進め、ユーザーにも伝えます。1本だけのときは並べる必要はなく、
 スクリプトにもその1本だけを渡せば連結なしで同じように仕上がります。
