@@ -35,6 +35,7 @@
 | 2倍 | `nibai_final.mp4` | `transcript_nibai.txt` / `.srt` |
 | 幸せ　完結編 | `shiawasekanketsuhen_final.mp4` | `transcript_shiawasekanketsuhen.txt` / `.srt` |
 | （タイトルなし） | `fanletter_final.mp4` | `transcript_fanletter.txt` / `.srt` |
+| 匂いがしない理由 | `nioigashinairiyu_final.mp4` | `transcript_nioigashinairiyu.txt` / `.srt` |
 
 文字起こしの txt には、時刻・話者・判断したこと（除外した幻聴、話者の決め手など）の補足が付いています。
 
@@ -65,6 +66,7 @@
 | `scripts/setup_check.py` | 環境チェック（足りないものの入れ方を OS ごとに表示） |
 | `scripts/analyze.py` | 文字起こしの調査（5通りの聞き方を1回で並べる）と区間の聞き直し |
 | `scripts/frames.py` | 指定時刻のコマを並べた画像（話者の確認用） |
+| `scripts/seam_order.py` | 番号の無いクリップ（Seedance の続き動画など）の順番を、つなぎ目のコマを比べて決める |
 | `scripts/make_subs.py` | セリフ一覧から字幕（ASS）・SRT・文字起こし txt を生成 |
 | `scripts/make_title.py` | タイトル画像の生成 |
 | `scripts/render.py` | 連結・タイトル・字幕を1回で書き出して検品（`--audio` で差し替えた音声を使う） |
